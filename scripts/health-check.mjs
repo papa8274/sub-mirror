@@ -7,6 +7,8 @@ const TCP_TIMEOUT_MS = Number(process.env.TCP_TIMEOUT_MS || 3500);
 const DNS_TIMEOUT_MS = Number(process.env.DNS_TIMEOUT_MS || 3000);
 const DNS_CONCURRENCY = Number(process.env.DNS_CONCURRENCY || 60);
 const TCP_CONCURRENCY = Number(process.env.TCP_CONCURRENCY || 80);
+const LEGACY_GEO_CONCURRENCY = Number(process.env.LEGACY_GEO_CONCURRENCY || 4);
+const LEGACY_GEO_MAX_PER_RUN = Math.min(40, Number(process.env.LEGACY_GEO_MAX_PER_RUN || 40));
 const COUNTRY_BATCH_SIZE = 100;
 
 if (!WORKER_URL || !/^https:\/\//i.test(WORKER_URL)) {
@@ -80,7 +82,7 @@ async function fetchJson(url, options = {}, retries = 3) {
         error.status = response.status;
         throw error;
       }
-      return data;
+      return { data, headers: response.headers };
     } catch (error) {
       lastError = error;
       if (attempt >= retries) break;
@@ -111,13 +113,22 @@ async function mapLimit(items, limit, fn) {
 async function resolveHost(host) {
   const normalized = normalizeHost(host);
   if (net.isIP(normalized)) {
-    return isPublicIp(normalized) ? { ip: normalized, geoSource: "direct-ip" } : { ip: "", geoSource: "none" };
+    return isPublicIp(normalized)
+      ? { ip: normalized, geoSource: "direct-ip" }
+      : { ip: "", geoSource: "none" };
   }
+
   try {
-    const rows = await withTimeout(dns.lookup(normalized, { all: true, verbatim: true }), DNS_TIMEOUT_MS, "DNS");
+    const rows = await withTimeout(
+      dns.lookup(normalized, { all: true, verbatim: true }),
+      DNS_TIMEOUT_MS,
+      "DNS"
+    );
     const publicRows = rows.filter((row) => isPublicIp(row.address));
     publicRows.sort((a, b) => a.family - b.family || a.address.localeCompare(b.address));
-    return publicRows.length ? { ip: publicRows[0].address, geoSource: "dns" } : { ip: "", geoSource: "none" };
+    return publicRows.length
+      ? { ip: publicRows[0].address, geoSource: "dns" }
+      : { ip: "", geoSource: "none" };
   } catch {
     return { ip: "", geoSource: "none" };
   }
@@ -137,18 +148,23 @@ async function tcpProbe(host, port) {
     socket.setTimeout(TCP_TIMEOUT_MS);
     socket.once("connect", () => finish({ ok: true, latencyMs: Math.max(1, Date.now() - started), error: "" }));
     socket.once("timeout", () => finish({ ok: false, latencyMs: 0, error: "timeout" }));
-    socket.once("error", (error) => finish({ ok: false, latencyMs: 0, error: String(error?.code || error?.message || "connection error").slice(0, 120) }));
+    socket.once("error", (error) => finish({
+      ok: false,
+      latencyMs: 0,
+      error: String(error?.code || error?.message || "connection error").slice(0, 120),
+    }));
   });
 }
 
 async function lookupCountries(ips) {
   const result = new Map();
   const unique = [...new Set(ips.filter(isPublicIp))];
+
   for (let i = 0; i < unique.length; i += COUNTRY_BATCH_SIZE) {
     const chunk = unique.slice(i, i + COUNTRY_BATCH_SIZE);
-    let rows;
+    let response;
     try {
-      rows = await fetchJson("https://api.country.is/?fields=asn", {
+      response = await fetchJson("https://api.country.is/?fields=asn", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json" },
         body: JSON.stringify(chunk),
@@ -157,6 +173,8 @@ async function lookupCountries(ips) {
       console.warn(`Country lookup batch failed: ${error.message}`);
       continue;
     }
+
+    const rows = response.data;
     if (!Array.isArray(rows)) continue;
     for (const row of rows) {
       const ip = normalizeHost(row?.ip);
@@ -165,39 +183,119 @@ async function lookupCountries(ips) {
       result.set(ip, {
         country,
         org: String(row?.asn?.organization || "").slice(0, 160),
+        ip,
+        geoSource: "country-is",
       });
     }
     if (i + COUNTRY_BATCH_SIZE < unique.length) await sleep(150);
+  }
+
+  return result;
+}
+
+async function legacyLookupHost(host) {
+  const normalized = normalizeHost(host);
+  if (!normalized) return null;
+
+  try {
+    const response = await fetchJson(
+      `http://ip-api.com/json/${encodeURIComponent(normalized)}?fields=status,message,countryCode,query,org`,
+      { headers: { accept: "application/json" } },
+      2
+    );
+    const row = response.data;
+    const country = String(row?.countryCode || "").toUpperCase();
+    const ip = normalizeHost(row?.query || "");
+    if (row?.status !== "success" || !/^[A-Z]{2}$/.test(country)) return null;
+
+    const remaining = Number(response.headers.get("x-rl") || 1);
+    const ttl = Number(response.headers.get("x-ttl") || 0);
+    if (remaining <= 0 && ttl > 0) await sleep(Math.min(ttl * 1000, 60000));
+
+    return {
+      country,
+      org: String(row?.org || "").slice(0, 160),
+      ip: isPublicIp(ip) ? ip : "",
+      geoSource: "legacy-domain",
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function buildLegacyFallback(items) {
+  const hostMap = new Map();
+  for (const item of items) {
+    const host = normalizeHost(item?.host);
+    if (!host || hostMap.has(host)) continue;
+    hostMap.set(host, item);
+  }
+
+  const hosts = [...hostMap.keys()].slice(0, LEGACY_GEO_MAX_PER_RUN);
+  if (!hosts.length) return new Map();
+
+  console.log(`Legacy fallback geolocation for ${hosts.length} unresolved/low-confidence hosts...`);
+  const rows = await mapLimit(hosts, LEGACY_GEO_CONCURRENCY, async (host) => {
+    const geo = await legacyLookupHost(host);
+    return { host, geo };
+  });
+
+  const result = new Map();
+  for (const row of rows) {
+    if (row?.host && row?.geo?.country) result.set(row.host, row.geo);
   }
   return result;
 }
 
 async function main() {
   console.log("Fetching health export from Worker...");
-  const exported = await fetchJson(`${WORKER_URL}/health/export`, {
+  const exportedResponse = await fetchJson(`${WORKER_URL}/health/export`, {
     headers: { authorization: `Bearer ${HEALTH_SECRET}`, accept: "application/json" },
   }, 4);
+  const exported = exportedResponse.data;
 
   const items = Array.isArray(exported.items) ? exported.items : [];
   console.log(`Received ${items.length} unique endpoints; generation=${exported.generation || "unknown"}`);
   if (!items.length) return;
 
   const resolvedRows = await mapLimit(items, DNS_CONCURRENCY, async (item) => {
-    const resolved = item.currentCountry && item.currentGeoIp && isPublicIp(item.currentGeoIp)
-      ? { ip: item.currentGeoIp, geoSource: net.isIP(normalizeHost(item.host)) ? "direct-ip" : "dns" }
-      : await resolveHost(item.host);
-    return { ...item, ...resolved };
+    const currentCountry = String(item.currentCountry || "").toUpperCase();
+    const confidence = String(item.currentLocationConfidence || "unknown").toLowerCase();
+    const needsGeoRefresh = !/^[A-Z]{2}$/.test(currentCountry) || confidence === "low" || confidence === "unknown";
+
+    let resolved;
+    if (needsGeoRefresh) {
+      resolved = await resolveHost(item.host);
+    } else if (item.currentGeoIp && isPublicIp(item.currentGeoIp)) {
+      resolved = {
+        ip: normalizeHost(item.currentGeoIp),
+        geoSource: net.isIP(normalizeHost(item.host)) ? "direct-ip" : "dns",
+      };
+    } else {
+      resolved = { ip: "", geoSource: "none" };
+    }
+
+    return { ...item, ...resolved, needsGeoRefresh };
   });
 
-  const missingCountryIps = resolvedRows
-    .filter((item) => item?.ip && !item.currentCountry)
+  const geoLookupIps = resolvedRows
+    .filter((item) => item?.needsGeoRefresh && item?.ip)
     .map((item) => item.ip);
-  console.log(`Resolving country for ${new Set(missingCountryIps).size} IP addresses...`);
-  const countries = await lookupCountries(missingCountryIps);
+
+  console.log(`Resolving country for ${new Set(geoLookupIps).size} IP addresses...`);
+  const countries = await lookupCountries(geoLookupIps);
+
+  const fallbackCandidates = resolvedRows.filter((item) => {
+    if (!item?.needsGeoRefresh) return false;
+    if (item.ip && countries.has(item.ip)) return false;
+    return true;
+  });
+  const legacyFallback = await buildLegacyFallback(fallbackCandidates);
 
   const probeRows = await mapLimit(resolvedRows, TCP_CONCURRENCY, async (item) => {
     const protocol = String(item.protocol || "").toLowerCase();
     let health;
+
     if (TCP_PROTOCOLS.has(protocol)) {
       health = await tcpProbe(item.host, item.port);
     } else if (UDP_PROTOCOLS.has(protocol)) {
@@ -206,9 +304,18 @@ async function main() {
       health = { ok: false, testable: false, latencyMs: 0, error: "Unsupported probe protocol" };
     }
 
-    const geo = item.currentCountry
-      ? { country: item.currentCountry, org: "" }
-      : (countries.get(item.ip) || { country: "", org: "" });
+    let geo = null;
+    if (item.needsGeoRefresh && item.ip) geo = countries.get(item.ip) || null;
+    if (!geo && item.needsGeoRefresh) geo = legacyFallback.get(normalizeHost(item.host)) || null;
+
+    if (!geo && /^[A-Z]{2}$/.test(String(item.currentCountry || "").toUpperCase())) {
+      geo = {
+        country: String(item.currentCountry).toUpperCase(),
+        org: "",
+        ip: item.currentGeoIp || item.ip || "",
+        geoSource: item.currentLocationConfidence === "low" ? "source-label" : (item.geoSource || "stored"),
+      };
+    }
 
     return {
       fingerprint: item.fingerprint,
@@ -216,10 +323,10 @@ async function main() {
       ok: health.ok === true,
       latencyMs: health.latencyMs || 0,
       error: health.error || "",
-      ip: item.ip || "",
-      country: geo.country || "",
-      org: geo.org || "",
-      geoSource: item.geoSource || "none",
+      ip: geo?.ip || item.ip || "",
+      country: geo?.country || "",
+      org: geo?.org || "",
+      geoSource: geo?.geoSource || item.geoSource || "none",
     };
   });
 
@@ -228,7 +335,13 @@ async function main() {
   const failed = results.filter((row) => row.testable && !row.ok).length;
   const untestable = results.filter((row) => !row.testable).length;
   const located = results.filter((row) => /^[A-Z]{2}$/.test(row.country)).length;
-  console.log(`Health result: healthy=${healthy}, failed=${failed}, untestable=${untestable}, located=${located}/${results.length}`);
+  const unresolved = results.length - located;
+  const legacyLocated = results.filter((row) => row.geoSource === "legacy-domain" && /^[A-Z]{2}$/.test(row.country)).length;
+
+  console.log(
+    `Health result: healthy=${healthy}, failed=${failed}, untestable=${untestable}, ` +
+    `located=${located}/${results.length}, unresolved=${unresolved}, legacyLocated=${legacyLocated}`
+  );
 
   const payload = {
     generation: exported.generation || "",
@@ -240,7 +353,7 @@ async function main() {
   let lastError;
   for (let attempt = 1; attempt <= 5; attempt += 1) {
     try {
-      const report = await fetchJson(`${WORKER_URL}/health/report`, {
+      const reportResponse = await fetchJson(`${WORKER_URL}/health/report`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${HEALTH_SECRET}`,
@@ -249,7 +362,7 @@ async function main() {
         },
         body: JSON.stringify(payload),
       }, 1);
-      console.log("Worker accepted report:", JSON.stringify(report));
+      console.log("Worker accepted report:", JSON.stringify(reportResponse.data));
       return;
     } catch (error) {
       lastError = error;
@@ -262,6 +375,7 @@ async function main() {
       }
     }
   }
+
   throw lastError;
 }
 
