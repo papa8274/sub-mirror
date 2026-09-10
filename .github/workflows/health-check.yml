@@ -1,6 +1,6 @@
 name: VPN Health and Geo Check
 
-on:
+"on":
   schedule:
     - cron: "10,40 * * * *"
   workflow_dispatch:
@@ -12,30 +12,66 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  SING_BOX_VERSION: "1.14.0"
+  SING_BOX_SHA256: "2375de6999f4f56ab46b4fc5ddf26a6aba1d3e61a0f4e7ddec2f4690457d5f63"
+  SING_BOX_CACHE_DIR: "/home/runner/.cache/papa-vpn/sing-box"
+
 jobs:
   health-check:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
           package-manager-cache: false
 
-      - name: Install sing-box
-        env:
-          SING_BOX_VERSION: "1.14.0"
+      - name: Restore sing-box cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.SING_BOX_CACHE_DIR }}
+          key: sing-box-${{ runner.os }}-amd64-${{ env.SING_BOX_VERSION }}-${{ env.SING_BOX_SHA256 }}
+
+      - name: Install verified sing-box
+        shell: bash
         run: |
           set -euo pipefail
-          curl -fL --retry 3 --retry-delay 2 \
-            "https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}/sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz" \
-            -o /tmp/sing-box.tar.gz
-          tar -xzf /tmp/sing-box.tar.gz -C /tmp
-          sudo install -m 0755 "/tmp/sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box" /usr/local/bin/sing-box
+
+          CACHE_BIN="${SING_BOX_CACHE_DIR}/${SING_BOX_VERSION}/sing-box"
+          ASSET="sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz"
+          RELEASE_URL="https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}/${ASSET}"
+
+          if [[ ! -x "${CACHE_BIN}" ]]; then
+            TMP_DIR="$(mktemp -d)"
+            trap 'rm -rf "${TMP_DIR}"' EXIT
+            mkdir -p "$(dirname "${CACHE_BIN}")"
+
+            curl --proto '=https' --tlsv1.2 -fL \
+              --retry 3 --retry-delay 2 --retry-all-errors \
+              "${RELEASE_URL}" \
+              -o "${TMP_DIR}/${ASSET}"
+
+            ACTUAL_SHA256="$(sha256sum "${TMP_DIR}/${ASSET}" | awk '{print $1}')"
+            if [[ "${ACTUAL_SHA256}" != "${SING_BOX_SHA256}" ]]; then
+              echo "sing-box SHA256 verification failed" >&2
+              echo "expected=${SING_BOX_SHA256}" >&2
+              echo "actual=${ACTUAL_SHA256}" >&2
+              exit 1
+            fi
+
+            tar -xzf "${TMP_DIR}/${ASSET}" -C "${TMP_DIR}"
+            install -m 0755 \
+              "${TMP_DIR}/sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box" \
+              "${CACHE_BIN}"
+          fi
+
+          sudo install -m 0755 "${CACHE_BIN}" /usr/local/bin/sing-box
           sing-box version
 
       - name: Run health, protocol, TLS and geolocation checks
@@ -47,11 +83,11 @@ jobs:
           TLS_TIMEOUT_MS: "4000"
           DNS_TIMEOUT_MS: "3000"
           PROTOCOL_TIMEOUT_MS: "8000"
+          ENDPOINT_CONCURRENCY: "60"
           DNS_CONCURRENCY: "60"
           TCP_CONCURRENCY: "60"
           PROTOCOL_CONCURRENCY: "18"
           TCP_SAMPLES: "3"
           LEGACY_GEO_CONCURRENCY: "4"
           LEGACY_GEO_MAX_PER_RUN: "45"
-          PROTOCOL_TEST_URL: "https://cp.cloudflare.com/generate_204"
         run: node scripts/health-check.mjs
