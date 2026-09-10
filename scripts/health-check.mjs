@@ -203,11 +203,17 @@ async function tcpProbeOnce(host, port) {
       resolve(result);
     };
     socket.setTimeout(TCP_TIMEOUT_MS);
-    socket.once("connect", () => finish({ ok: true, latencyMs: Math.max(1, Date.now() - started), error: "" }));
-    socket.once("timeout", () => finish({ ok: false, latencyMs: 0, error: "timeout" }));
+    socket.once("connect", () => finish({
+      ok: true,
+      latencyMs: Math.max(1, Date.now() - started),
+      remoteIp: isPublicIp(normalizeHost(socket.remoteAddress || "")) ? normalizeHost(socket.remoteAddress) : "",
+      error: "",
+    }));
+    socket.once("timeout", () => finish({ ok: false, latencyMs: 0, remoteIp: "", error: "timeout" }));
     socket.once("error", (error) => finish({
       ok: false,
       latencyMs: 0,
+      remoteIp: "",
       error: String(error?.code || error?.message || "connection error").slice(0, 120),
     }));
   });
@@ -215,19 +221,27 @@ async function tcpProbeOnce(host, port) {
 
 async function tcpProbeSamples(host, port) {
   const samples = [];
+  const remoteIps = new Map();
   let lastError = "";
   for (let i = 0; i < TCP_SAMPLES; i += 1) {
     const result = await tcpProbeOnce(host, port);
-    if (result.ok) samples.push(result.latencyMs);
-    else lastError = result.error || lastError;
+    if (result.ok) {
+      samples.push(result.latencyMs);
+      if (result.remoteIp) remoteIps.set(result.remoteIp, (remoteIps.get(result.remoteIp) || 0) + 1);
+    } else {
+      lastError = result.error || lastError;
+    }
     if (i + 1 < TCP_SAMPLES) await sleep(40);
   }
   const requiredSuccesses = Math.max(1, Math.ceil(TCP_SAMPLES / 2));
+  const remoteIp = [...remoteIps.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || "";
   return {
     ok: samples.length >= requiredSuccesses,
     latencyMs: median(samples),
     sampleCount: TCP_SAMPLES,
     successfulSamples: samples.length,
+    remoteIp,
     error: samples.length >= requiredSuccesses ? "" : (lastError || "tcp samples failed"),
   };
 }
@@ -777,40 +791,17 @@ async function main() {
   console.log(`Received ${items.length} unique endpoints; generation=${exported.generation || "unknown"}`);
   if (!items.length) return;
 
+  console.log(`Resolving fresh endpoint IPs for ${items.length} configs...`);
   const resolvedRows = await mapLimit(items, DNS_CONCURRENCY, async (item) => {
-    const currentCountry = String(item.currentCountry || "").toUpperCase();
-    const confidence = String(item.currentLocationConfidence || "unknown").toLowerCase();
-    const needsGeoRefresh = !/^[A-Z]{2}$/.test(currentCountry) || confidence === "low" || confidence === "unknown";
-
-    let resolved;
-    if (needsGeoRefresh || !item.currentGeoIp) {
-      resolved = await resolveHost(item.host);
-    } else if (item.currentGeoIp && isPublicIp(item.currentGeoIp)) {
-      resolved = {
-        ip: normalizeHost(item.currentGeoIp),
-        geoSource: net.isIP(normalizeHost(item.host)) ? "direct-ip" : "dns",
-        countryConfidence: net.isIP(normalizeHost(item.host)) ? "high" : "medium",
-      };
-    } else {
-      resolved = { ip: "", geoSource: "none", countryConfidence: "unknown" };
-    }
-
-    return { ...item, ...resolved, needsGeoRefresh };
+    const resolved = await resolveHost(item.host);
+    return {
+      ...item,
+      ...resolved,
+      currentCountry: String(item.currentCountry || "").toUpperCase(),
+      currentLocationConfidence: String(item.currentLocationConfidence || "unknown").toLowerCase(),
+      currentGeoSource: String(item.currentGeoSource || "stored"),
+    };
   });
-
-  const geoLookupIps = resolvedRows
-    .filter((item) => item?.needsGeoRefresh && item?.ip)
-    .map((item) => item.ip);
-
-  console.log(`Resolving country for ${new Set(geoLookupIps).size} IP addresses...`);
-  const countries = await lookupCountries(geoLookupIps);
-
-  const fallbackCandidates = resolvedRows.filter((item) => {
-    if (!item?.needsGeoRefresh) return false;
-    if (item.ip && countries.has(item.ip)) return false;
-    return true;
-  });
-  const legacyFallback = await buildLegacyFallback(fallbackCandidates);
 
   console.log(`Running ${TCP_SAMPLES}-sample endpoint checks...`);
   const endpointRows = await mapLimit(resolvedRows, TCP_CONCURRENCY, async (item) => {
@@ -819,14 +810,42 @@ async function main() {
     if (TCP_PROTOCOLS.has(protocol)) {
       endpointHealth = await tcpProbeSamples(item.host, item.port);
     } else if (PROTOCOL_TEST_PROTOCOLS.has(protocol)) {
-      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, error: "deep protocol check required" };
+      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, remoteIp: "", error: "deep protocol check required" };
     } else if (UDP_PROTOCOLS.has(protocol)) {
-      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, error: "UDP protocol requires deep protocol support" };
+      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, remoteIp: "", error: "UDP protocol requires deep protocol support" };
     } else {
-      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, error: "Unsupported probe protocol" };
+      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, remoteIp: "", error: "Unsupported probe protocol" };
     }
-    return { ...item, endpointHealth };
+
+    const connectedIp = isPublicIp(normalizeHost(endpointHealth.remoteIp || ""))
+      ? normalizeHost(endpointHealth.remoteIp)
+      : "";
+    const preferredGeoIp = connectedIp || (isPublicIp(item.ip) ? item.ip : "");
+    const preferredGeoSource = net.isIP(normalizeHost(item.host))
+      ? "direct-ip"
+      : connectedIp ? "tcp-remote-ip" : item.geoSource;
+    const preferredCountryConfidence = preferredGeoSource === "direct-ip" || preferredGeoSource === "tcp-remote-ip"
+      ? "high"
+      : preferredGeoIp ? "medium" : "unknown";
+
+    return {
+      ...item,
+      endpointHealth,
+      preferredGeoIp,
+      preferredGeoSource,
+      preferredCountryConfidence,
+    };
   });
+
+  const geoLookupIps = endpointRows.map((item) => item.preferredGeoIp).filter(isPublicIp);
+  console.log(`Resolving country for ${new Set(geoLookupIps).size} freshly resolved/connected IP addresses...`);
+  const countries = await lookupCountries(geoLookupIps);
+
+  const fallbackCandidates = endpointRows.filter((item) => {
+    if (item.preferredGeoIp && countries.has(item.preferredGeoIp)) return false;
+    return true;
+  });
+  const legacyFallback = await buildLegacyFallback(fallbackCandidates);
 
   console.log("Running deep protocol checks with sing-box where supported...");
   const deepRows = await mapLimit(endpointRows, PROTOCOL_CONCURRENCY, async (item) => {
@@ -874,17 +893,24 @@ async function main() {
     }
 
     let geo = null;
-    if (item.needsGeoRefresh && item.ip) {
-      geo = countries.get(item.ip) || null;
-      if (geo && item.geoSource === "direct-ip") geo = { ...geo, geoSource: "direct-ip", countryConfidence: "high" };
+    if (item.preferredGeoIp) {
+      const fresh = countries.get(item.preferredGeoIp) || null;
+      if (fresh) {
+        geo = {
+          ...fresh,
+          ip: item.preferredGeoIp,
+          geoSource: item.preferredGeoSource || "dns",
+          countryConfidence: item.preferredCountryConfidence || "medium",
+        };
+      }
     }
-    if (!geo && item.needsGeoRefresh) geo = legacyFallback.get(normalizeHost(item.host)) || null;
+    if (!geo) geo = legacyFallback.get(normalizeHost(item.host)) || null;
     if (!geo && /^[A-Z]{2}$/.test(String(item.currentCountry || "").toUpperCase())) {
       geo = {
         country: String(item.currentCountry).toUpperCase(),
         org: "",
-        ip: item.currentGeoIp || item.ip || "",
-        geoSource: item.currentLocationConfidence === "low" ? "source-label" : (item.geoSource || "stored"),
+        ip: item.currentGeoIp || item.preferredGeoIp || item.ip || "",
+        geoSource: item.currentGeoSource || (item.currentLocationConfidence === "low" ? "source-label" : "stored"),
         countryConfidence: item.currentLocationConfidence || "low",
       };
     }
@@ -902,11 +928,11 @@ async function main() {
       tlsTested: tlsResult.tested === true,
       tlsOk: tlsResult.tested === true && tlsResult.ok === true,
       probeLevel,
-      ip: geo?.ip || item.ip || "",
+      ip: geo?.ip || item.preferredGeoIp || item.ip || "",
       country: geo?.country || "",
-      countryConfidence: geo?.countryConfidence || item.countryConfidence || "unknown",
+      countryConfidence: geo?.countryConfidence || item.currentLocationConfidence || "unknown",
       org: geo?.org || "",
-      geoSource: geo?.geoSource || item.geoSource || "none",
+      geoSource: geo?.geoSource || item.preferredGeoSource || item.currentGeoSource || "none",
     };
   });
 
