@@ -80,6 +80,7 @@ async function fetchJson(url, options = {}, retries = 3) {
       if (!response.ok) {
         const error = new Error(`HTTP ${response.status}: ${data?.error || text || response.statusText}`);
         error.status = response.status;
+        error.data = data;
         throw error;
       }
       return { data, headers: response.headers };
@@ -351,7 +352,8 @@ async function main() {
   };
 
   let lastError;
-  for (let attempt = 1; attempt <= 5; attempt += 1) {
+  const maxReportAttempts = 12;
+  for (let attempt = 1; attempt <= maxReportAttempts; attempt += 1) {
     try {
       const reportResponse = await fetchJson(`${WORKER_URL}/health/report`, {
         method: "POST",
@@ -366,13 +368,20 @@ async function main() {
       return;
     } catch (error) {
       lastError = error;
-      if (error?.status !== 409 || attempt >= 5) break;
-      console.log(`Worker busy or generation changed; refetching in 30s (${attempt}/5)...`);
-      await sleep(30000);
+      if (error?.status !== 409) break;
+
       if (/generation/i.test(error.message || "")) {
-        console.log("Generation changed. Ending this run; the next scheduled run will test the new bank.");
+        console.log("Generation changed while this health run was executing. Skipping this stale report; the next run will test the new bank.");
         return;
       }
+
+      if (attempt >= maxReportAttempts) break;
+      const retryAfter = Number(error?.data?.retryAfterSeconds);
+      const waitSeconds = Number.isFinite(retryAfter)
+        ? Math.max(5, Math.min(60, Math.ceil(retryAfter)))
+        : 15;
+      console.log(`Worker is updating; retrying report in ${waitSeconds}s (${attempt}/${maxReportAttempts})...`);
+      await sleep(waitSeconds * 1000);
     }
   }
 
