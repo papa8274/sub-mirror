@@ -1,15 +1,26 @@
 import dns from "node:dns/promises";
 import net from "node:net";
+import tls from "node:tls";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { spawn } from "node:child_process";
 
 const WORKER_URL = String(process.env.WORKER_URL || "").replace(/\/+$/, "");
 const HEALTH_SECRET = String(process.env.WORKER_HEALTH_SECRET || "");
+const SING_BOX_BIN = String(process.env.SING_BOX_BIN || "sing-box");
 const TCP_TIMEOUT_MS = Number(process.env.TCP_TIMEOUT_MS || 3500);
+const TLS_TIMEOUT_MS = Number(process.env.TLS_TIMEOUT_MS || 4000);
 const DNS_TIMEOUT_MS = Number(process.env.DNS_TIMEOUT_MS || 3000);
+const PROTOCOL_TIMEOUT_MS = Number(process.env.PROTOCOL_TIMEOUT_MS || 8000);
 const DNS_CONCURRENCY = Number(process.env.DNS_CONCURRENCY || 60);
-const TCP_CONCURRENCY = Number(process.env.TCP_CONCURRENCY || 80);
+const TCP_CONCURRENCY = Number(process.env.TCP_CONCURRENCY || 60);
+const PROTOCOL_CONCURRENCY = Number(process.env.PROTOCOL_CONCURRENCY || 18);
+const TCP_SAMPLES = Math.max(1, Math.min(5, Number(process.env.TCP_SAMPLES || 3)));
 const LEGACY_GEO_CONCURRENCY = Number(process.env.LEGACY_GEO_CONCURRENCY || 4);
-const LEGACY_GEO_MAX_PER_RUN = Math.min(40, Number(process.env.LEGACY_GEO_MAX_PER_RUN || 40));
+const LEGACY_GEO_MAX_PER_RUN = Math.min(45, Number(process.env.LEGACY_GEO_MAX_PER_RUN || 45));
 const COUNTRY_BATCH_SIZE = 100;
+const TEST_URL = String(process.env.PROTOCOL_TEST_URL || "https://cp.cloudflare.com/generate_204");
 
 if (!WORKER_URL || !/^https:\/\//i.test(WORKER_URL)) {
   throw new Error("WORKER_URL must be a valid https:// URL");
@@ -17,7 +28,9 @@ if (!WORKER_URL || !/^https:\/\//i.test(WORKER_URL)) {
 if (!HEALTH_SECRET) throw new Error("WORKER_HEALTH_SECRET is missing");
 
 const TCP_PROTOCOLS = new Set(["vless", "vmess", "trojan", "ss", "ssr", "ssh"]);
+const PROTOCOL_TEST_PROTOCOLS = new Set(["vless", "vmess", "trojan", "ss", "hysteria2", "tuic"]);
 const UDP_PROTOCOLS = new Set(["hysteria", "hysteria2", "tuic", "wireguard"]);
+const U_TLS_FINGERPRINTS = new Set(["chrome", "firefox", "safari", "edge", "ios", "android", "random", "randomized"]);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -25,6 +38,42 @@ function sleep(ms) {
 
 function normalizeHost(value) {
   return String(value || "").trim().replace(/^\[|\]$/g, "").replace(/\.$/, "").toLowerCase();
+}
+
+function normalizeProtocol(value) {
+  const protocol = String(value || "").trim().toLowerCase();
+  if (protocol === "hy2") return "hysteria2";
+  if (protocol === "wg") return "wireguard";
+  return protocol;
+}
+
+function decodeURIComponentSafe(value) {
+  try { return decodeURIComponent(String(value || "")); }
+  catch { return String(value || ""); }
+}
+
+function decodeBase64Flexible(value) {
+  let text = String(value || "").trim().replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+  while (text.length % 4) text += "=";
+  return Buffer.from(text, "base64").toString("utf8");
+}
+
+function stripFragment(value) {
+  const text = String(value || "");
+  const index = text.indexOf("#");
+  return index >= 0 ? text.slice(0, index) : text;
+}
+
+function boolParam(value) {
+  const text = String(value || "").trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(text);
+}
+
+function splitList(value) {
+  return String(value || "")
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function isPublicIp(ip) {
@@ -46,6 +95,13 @@ function isPublicIp(ip) {
   if (v.startsWith("fc") || v.startsWith("fd")) return false;
   if (/^fe[89ab]/.test(v)) return false;
   return true;
+}
+
+function median(values) {
+  const sorted = values.filter((value) => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
+  if (!sorted.length) return 0;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
 async function withTimeout(promise, ms, label) {
@@ -115,8 +171,8 @@ async function resolveHost(host) {
   const normalized = normalizeHost(host);
   if (net.isIP(normalized)) {
     return isPublicIp(normalized)
-      ? { ip: normalized, geoSource: "direct-ip" }
-      : { ip: "", geoSource: "none" };
+      ? { ip: normalized, geoSource: "direct-ip", countryConfidence: "high" }
+      : { ip: "", geoSource: "none", countryConfidence: "unknown" };
   }
 
   try {
@@ -128,14 +184,14 @@ async function resolveHost(host) {
     const publicRows = rows.filter((row) => isPublicIp(row.address));
     publicRows.sort((a, b) => a.family - b.family || a.address.localeCompare(b.address));
     return publicRows.length
-      ? { ip: publicRows[0].address, geoSource: "dns" }
-      : { ip: "", geoSource: "none" };
+      ? { ip: publicRows[0].address, geoSource: "dns", countryConfidence: "medium" }
+      : { ip: "", geoSource: "none", countryConfidence: "unknown" };
   } catch {
-    return { ip: "", geoSource: "none" };
+    return { ip: "", geoSource: "none", countryConfidence: "unknown" };
   }
 }
 
-async function tcpProbe(host, port) {
+async function tcpProbeOnce(host, port) {
   const started = Date.now();
   return await new Promise((resolve) => {
     let settled = false;
@@ -153,6 +209,52 @@ async function tcpProbe(host, port) {
       ok: false,
       latencyMs: 0,
       error: String(error?.code || error?.message || "connection error").slice(0, 120),
+    }));
+  });
+}
+
+async function tcpProbeSamples(host, port) {
+  const samples = [];
+  let lastError = "";
+  for (let i = 0; i < TCP_SAMPLES; i += 1) {
+    const result = await tcpProbeOnce(host, port);
+    if (result.ok) samples.push(result.latencyMs);
+    else lastError = result.error || lastError;
+    if (i + 1 < TCP_SAMPLES) await sleep(40);
+  }
+  const requiredSuccesses = Math.max(1, Math.ceil(TCP_SAMPLES / 2));
+  return {
+    ok: samples.length >= requiredSuccesses,
+    latencyMs: median(samples),
+    sampleCount: TCP_SAMPLES,
+    successfulSamples: samples.length,
+    error: samples.length >= requiredSuccesses ? "" : (lastError || "tcp samples failed"),
+  };
+}
+
+async function tlsProbe(host, port, serverName, insecure) {
+  const started = Date.now();
+  return await new Promise((resolve) => {
+    let settled = false;
+    const socket = tls.connect({
+      host,
+      port: Number(port),
+      servername: serverName || undefined,
+      rejectUnauthorized: !insecure,
+    });
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(result);
+    };
+    socket.setTimeout(TLS_TIMEOUT_MS);
+    socket.once("secureConnect", () => finish({ ok: true, latencyMs: Math.max(1, Date.now() - started), error: "" }));
+    socket.once("timeout", () => finish({ ok: false, latencyMs: 0, error: "tls timeout" }));
+    socket.once("error", (error) => finish({
+      ok: false,
+      latencyMs: 0,
+      error: String(error?.code || error?.message || "tls error").slice(0, 120),
     }));
   });
 }
@@ -186,6 +288,7 @@ async function lookupCountries(ips) {
         org: String(row?.asn?.organization || "").slice(0, 160),
         ip,
         geoSource: "country-is",
+        countryConfidence: "medium",
       });
     }
     if (i + COUNTRY_BATCH_SIZE < unique.length) await sleep(150);
@@ -218,6 +321,7 @@ async function legacyLookupHost(host) {
       org: String(row?.org || "").slice(0, 160),
       ip: isPublicIp(ip) ? ip : "",
       geoSource: "legacy-domain",
+      countryConfidence: "low",
     };
   } catch {
     return null;
@@ -248,6 +352,420 @@ async function buildLegacyFallback(items) {
   return result;
 }
 
+function getParam(params, ...names) {
+  for (const name of names) {
+    const value = params.get(name);
+    if (value !== null && value !== "") return value;
+  }
+  return "";
+}
+
+function normalizeTransportName(value) {
+  const name = String(value || "").toLowerCase();
+  if (["websocket", "ws"].includes(name)) return "ws";
+  if (["grpc", "gun"].includes(name)) return "grpc";
+  if (["httpupgrade", "http-upgrade", "upgrade"].includes(name)) return "httpupgrade";
+  if (["http", "h2"].includes(name)) return "http";
+  if (name === "quic") return "quic";
+  return "";
+}
+
+function rawTransportName(params, fallback = {}) {
+  return String(getParam(params, "type", "network", "net") || fallback.net || fallback.network || "").toLowerCase();
+}
+
+function isTransportSupported(params, fallback = {}) {
+  const raw = rawTransportName(params, fallback);
+  if (!raw || ["tcp", "none", "ws", "websocket", "grpc", "gun", "httpupgrade", "http-upgrade", "upgrade", "http", "h2", "quic"].includes(raw)) return true;
+  return false;
+}
+
+function buildTransport(params, fallback = {}) {
+  const raw = rawTransportName(params, fallback);
+  const headerType = String(getParam(params, "headerType", "header", "headertype") || fallback.type || fallback.headerType || "").toLowerCase();
+  let type = normalizeTransportName(raw);
+  if ((!raw || raw === "tcp" || raw === "none") && headerType === "http") type = "http";
+  const host = decodeURIComponentSafe(getParam(params, "host", "authority") || fallback.host || "");
+  const pathValue = decodeURIComponentSafe(getParam(params, "path") || fallback.path || "");
+  const pathText = pathValue || "/";
+
+  if (type === "ws") {
+    const transport = { type: "ws", path: pathText };
+    if (host) transport.headers = { Host: host };
+    const ed = Number(getParam(params, "ed", "early_data") || 0);
+    if (Number.isFinite(ed) && ed > 0) {
+      transport.max_early_data = Math.min(65535, Math.floor(ed));
+      transport.early_data_header_name = "Sec-WebSocket-Protocol";
+    }
+    return transport;
+  }
+  if (type === "grpc") {
+    return {
+      type: "grpc",
+      service_name: decodeURIComponentSafe(getParam(params, "serviceName", "service_name") || pathValue || fallback.path || ""),
+    };
+  }
+  if (type === "httpupgrade") {
+    const transport = { type: "httpupgrade", path: pathText };
+    if (host) transport.host = host;
+    return transport;
+  }
+  if (type === "http") {
+    const transport = { type: "http", path: pathText };
+    if (host) transport.host = splitList(host);
+    return transport;
+  }
+  if (type === "quic") return { type: "quic" };
+  return null;
+}
+
+function buildTls(params, fallback = {}, options = {}) {
+  const security = String(getParam(params, "security") || fallback.security || fallback.tls || "").toLowerCase();
+  const reality = security === "reality";
+  const enabled = options.required || reality || security === "tls" || boolParam(getParam(params, "tls"));
+  if (!enabled) return { tls: null, meta: { required: false, reality: false, serverName: "", insecure: false } };
+
+  const serverName = decodeURIComponentSafe(
+    getParam(params, "sni", "servername", "server_name", "peer") || fallback.sni || fallback.serverName || options.defaultServerName || ""
+  );
+  const insecure = boolParam(getParam(params, "allowInsecure", "allow_insecure", "insecure")) || boolParam(fallback.allowInsecure);
+  const tlsConfig = {
+    enabled: true,
+    insecure,
+  };
+  if (serverName) tlsConfig.server_name = serverName;
+
+  const alpn = splitList(getParam(params, "alpn") || fallback.alpn || "");
+  if (alpn.length) tlsConfig.alpn = alpn;
+
+  const fp = String(getParam(params, "fp", "fingerprint") || fallback.fp || "").toLowerCase();
+  if (fp && U_TLS_FINGERPRINTS.has(fp)) tlsConfig.utls = { enabled: true, fingerprint: fp };
+
+  if (reality) {
+    const publicKey = decodeURIComponentSafe(getParam(params, "pbk", "publicKey", "public_key"));
+    const shortId = decodeURIComponentSafe(getParam(params, "sid", "shortId", "short_id"));
+    if (!publicKey) return { tls: null, meta: { required: true, reality: true, serverName, insecure, invalid: "missing reality public key" } };
+    tlsConfig.reality = { enabled: true, public_key: publicKey, short_id: shortId || "" };
+  }
+
+  return { tls: tlsConfig, meta: { required: true, reality, serverName, insecure } };
+}
+
+function parseUrlConfig(raw) {
+  try { return new URL(stripFragment(raw)); }
+  catch { return null; }
+}
+
+function parseVless(raw, item) {
+  const url = parseUrlConfig(raw);
+  if (!url) return { supported: false, reason: "invalid vless URL" };
+  const params = url.searchParams;
+  if (!isTransportSupported(params)) return { supported: false, reason: "unsupported vless transport" };
+  const uuid = decodeURIComponentSafe(url.username);
+  if (!uuid) return { supported: false, reason: "missing vless uuid" };
+  const server = item.ip || normalizeHost(url.hostname || item.host);
+  const port = Number(url.port || item.port);
+  const tlsInfo = buildTls(params, {}, { defaultServerName: net.isIP(url.hostname) ? "" : url.hostname });
+  if (tlsInfo.meta.invalid) return { supported: false, reason: tlsInfo.meta.invalid, tlsMeta: tlsInfo.meta };
+  const outbound = { type: "vless", tag: "proxy", server, server_port: port, uuid };
+  const flow = decodeURIComponentSafe(getParam(params, "flow"));
+  if (flow) outbound.flow = flow;
+  if (tlsInfo.tls) outbound.tls = tlsInfo.tls;
+  const transport = buildTransport(params);
+  if (transport) outbound.transport = transport;
+  return { supported: true, outbound, tlsMeta: tlsInfo.meta };
+}
+
+function parseVmess(raw, item) {
+  try {
+    const body = stripFragment(raw).slice(raw.indexOf("://") + 3);
+    const data = JSON.parse(decodeBase64Flexible(body));
+    const params = new URLSearchParams();
+    if (!isTransportSupported(params, data)) return { supported: false, reason: "unsupported vmess transport" };
+    const serverHost = normalizeHost(data.add || data.host || item.host);
+    const server = item.ip || serverHost;
+    const port = Number(data.port || item.port);
+    const uuid = String(data.id || data.uuid || "").trim();
+    if (!server || !port || !uuid) return { supported: false, reason: "invalid vmess fields" };
+    const tlsInfo = buildTls(params, {
+      security: data.tls || "",
+      sni: data.sni || "",
+      alpn: data.alpn || "",
+      fp: data.fp || "",
+      allowInsecure: data.allowInsecure || data.insecure || "",
+    }, { defaultServerName: net.isIP(serverHost) ? "" : serverHost });
+    const outbound = {
+      type: "vmess",
+      tag: "proxy",
+      server,
+      server_port: port,
+      uuid,
+      security: String(data.scy || data.security || "auto").toLowerCase() || "auto",
+      alter_id: Number.isFinite(Number(data.aid)) ? Number(data.aid) : 0,
+    };
+    if (tlsInfo.tls) outbound.tls = tlsInfo.tls;
+    const transport = buildTransport(params, data);
+    if (transport) outbound.transport = transport;
+    return { supported: true, outbound, tlsMeta: tlsInfo.meta };
+  } catch {
+    return { supported: false, reason: "invalid vmess payload" };
+  }
+}
+
+function parseTrojan(raw, item) {
+  const url = parseUrlConfig(raw);
+  if (!url) return { supported: false, reason: "invalid trojan URL" };
+  const params = url.searchParams;
+  if (!isTransportSupported(params)) return { supported: false, reason: "unsupported trojan transport" };
+  const password = decodeURIComponentSafe(url.username || url.password);
+  if (!password) return { supported: false, reason: "missing trojan password" };
+  const serverHost = normalizeHost(url.hostname || item.host);
+  const server = item.ip || serverHost;
+  const port = Number(url.port || item.port);
+  const tlsInfo = buildTls(params, {}, { required: true, defaultServerName: net.isIP(serverHost) ? "" : serverHost });
+  if (tlsInfo.meta.invalid) return { supported: false, reason: tlsInfo.meta.invalid, tlsMeta: tlsInfo.meta };
+  const outbound = { type: "trojan", tag: "proxy", server, server_port: port, password };
+  outbound.tls = tlsInfo.tls;
+  const transport = buildTransport(params);
+  if (transport) outbound.transport = transport;
+  return { supported: true, outbound, tlsMeta: tlsInfo.meta };
+}
+
+function parseShadowsocks(raw, item) {
+  try {
+    const body = stripFragment(raw).slice(raw.indexOf("://") + 3);
+    const qIndex = body.indexOf("?");
+    const main = qIndex >= 0 ? body.slice(0, qIndex) : body;
+    const query = qIndex >= 0 ? body.slice(qIndex + 1) : "";
+    const params = new URLSearchParams(query);
+    let credentials = "";
+    let hostPort = "";
+    const at = main.lastIndexOf("@");
+    if (at >= 0) {
+      credentials = decodeURIComponentSafe(main.slice(0, at));
+      hostPort = main.slice(at + 1);
+      if (!credentials.includes(":")) credentials = decodeBase64Flexible(credentials);
+    } else {
+      const decoded = decodeBase64Flexible(main);
+      const decodedAt = decoded.lastIndexOf("@");
+      if (decodedAt < 0) return { supported: false, reason: "invalid shadowsocks payload" };
+      credentials = decoded.slice(0, decodedAt);
+      hostPort = decoded.slice(decodedAt + 1);
+    }
+    const colon = credentials.indexOf(":");
+    if (colon <= 0) return { supported: false, reason: "invalid shadowsocks credentials" };
+    const method = credentials.slice(0, colon);
+    const password = credentials.slice(colon + 1);
+    const portColon = hostPort.lastIndexOf(":");
+    if (portColon <= 0) return { supported: false, reason: "invalid shadowsocks endpoint" };
+    const originalHost = normalizeHost(hostPort.slice(0, portColon));
+    const server = item.ip || originalHost;
+    const port = Number(hostPort.slice(portColon + 1) || item.port);
+    const outbound = { type: "shadowsocks", tag: "proxy", server, server_port: port, method, password };
+    const pluginRaw = decodeURIComponentSafe(getParam(params, "plugin"));
+    if (pluginRaw) {
+      const [plugin, ...opts] = pluginRaw.split(";");
+      if (["obfs-local", "v2ray-plugin"].includes(plugin)) {
+        outbound.plugin = plugin;
+        outbound.plugin_opts = opts.join(";");
+      }
+    }
+    return { supported: true, outbound, tlsMeta: { required: false, reality: false, serverName: "", insecure: false } };
+  } catch {
+    return { supported: false, reason: "invalid shadowsocks URL" };
+  }
+}
+
+function parseHysteria2(raw, item) {
+  const url = parseUrlConfig(raw);
+  if (!url) return { supported: false, reason: "invalid hysteria2 URL" };
+  const params = url.searchParams;
+  const hyUser = decodeURIComponentSafe(url.username);
+  const hyPass = decodeURIComponentSafe(url.password);
+  const password = hyUser && hyPass ? `${hyUser}:${hyPass}` : (hyUser || hyPass);
+  if (!password) return { supported: false, reason: "missing hysteria2 password" };
+  const serverHost = normalizeHost(url.hostname || item.host);
+  const server = item.ip || serverHost;
+  const port = Number(url.port || item.port);
+  const tlsInfo = buildTls(params, {}, { required: true, defaultServerName: net.isIP(serverHost) ? "" : serverHost });
+  const outbound = { type: "hysteria2", tag: "proxy", server, server_port: port, password, tls: tlsInfo.tls };
+  const obfsType = String(getParam(params, "obfs")).toLowerCase();
+  const obfsPassword = decodeURIComponentSafe(getParam(params, "obfs-password", "obfs_password"));
+  if (obfsType && obfsPassword && ["salamander", "gecko"].includes(obfsType)) {
+    outbound.obfs = { type: obfsType, password: obfsPassword };
+  }
+  return { supported: true, outbound, tlsMeta: { ...tlsInfo.meta, quic: true } };
+}
+
+function parseTuic(raw, item) {
+  const url = parseUrlConfig(raw);
+  if (!url) return { supported: false, reason: "invalid tuic URL" };
+  const params = url.searchParams;
+  const uuid = decodeURIComponentSafe(url.username);
+  const password = decodeURIComponentSafe(url.password);
+  if (!uuid || !password) return { supported: false, reason: "missing tuic credentials" };
+  const serverHost = normalizeHost(url.hostname || item.host);
+  const server = item.ip || serverHost;
+  const port = Number(url.port || item.port);
+  const tlsInfo = buildTls(params, {}, { required: true, defaultServerName: net.isIP(serverHost) ? "" : serverHost });
+  const outbound = { type: "tuic", tag: "proxy", server, server_port: port, uuid, password, tls: tlsInfo.tls };
+  const cc = String(getParam(params, "congestion_control", "congestion-control")).toLowerCase();
+  if (["cubic", "new_reno", "bbr"].includes(cc)) outbound.congestion_control = cc;
+  return { supported: true, outbound, tlsMeta: { ...tlsInfo.meta, quic: true } };
+}
+
+function parseProxyConfig(raw, item) {
+  const protocol = normalizeProtocol(item.protocol || String(raw || "").split("://")[0]);
+  if (!PROTOCOL_TEST_PROTOCOLS.has(protocol) || !raw) return { supported: false, reason: "protocol not supported by deep checker" };
+  if (protocol === "vless") return parseVless(raw, item);
+  if (protocol === "vmess") return parseVmess(raw, item);
+  if (protocol === "trojan") return parseTrojan(raw, item);
+  if (protocol === "ss") return parseShadowsocks(raw, item);
+  if (protocol === "hysteria2") return parseHysteria2(raw, item);
+  if (protocol === "tuic") return parseTuic(raw, item);
+  return { supported: false, reason: "protocol parser unavailable" };
+}
+
+async function getFreePort() {
+  return await new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      server.close((error) => error ? reject(error) : resolve(port));
+    });
+  });
+}
+
+async function waitForPort(port, child, timeoutMs = 2500) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) return false;
+    const ok = await new Promise((resolve) => {
+      const socket = net.createConnection({ host: "127.0.0.1", port });
+      const finish = (value) => { socket.destroy(); resolve(value); };
+      socket.setTimeout(250);
+      socket.once("connect", () => finish(true));
+      socket.once("timeout", () => finish(false));
+      socket.once("error", () => finish(false));
+    });
+    if (ok) return true;
+    await sleep(80);
+  }
+  return false;
+}
+
+async function runCommand(command, args, timeoutMs) {
+  return await new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    const timer = setTimeout(() => {
+      try { child.kill("SIGKILL"); } catch {}
+    }, timeoutMs);
+    child.stderr.on("data", (chunk) => {
+      if (stderr.length < 4000) stderr += chunk.toString("utf8");
+    });
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      resolve({ code: -1, stderr: String(error?.message || error) });
+    });
+    child.once("exit", (code) => {
+      clearTimeout(timer);
+      resolve({ code: Number.isInteger(code) ? code : -1, stderr: stderr.slice(-1000) });
+    });
+  });
+}
+
+async function deepProtocolProbe(item) {
+  const parsed = parseProxyConfig(item.raw, item);
+  if (!parsed.supported) {
+    return {
+      tested: false,
+      ok: false,
+      latencyMs: 0,
+      error: parsed.reason || "deep parser unavailable",
+      tlsMeta: parsed.tlsMeta || null,
+    };
+  }
+
+  const port = await getFreePort();
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "papa-vpn-"));
+  const configPath = path.join(tempDir, "config.json");
+  const config = {
+    log: { disabled: true },
+    inbounds: [{ type: "mixed", tag: "mixed-in", listen: "127.0.0.1", listen_port: port }],
+    outbounds: [parsed.outbound],
+    route: { final: "proxy" },
+  };
+
+  let child = null;
+  const started = Date.now();
+  try {
+    await fs.writeFile(configPath, JSON.stringify(config), "utf8");
+    const checked = await runCommand(SING_BOX_BIN, ["check", "-c", configPath], 4000);
+    if (checked.code !== 0) {
+      return {
+        tested: false,
+        ok: false,
+        latencyMs: 0,
+        error: `sing-box config unsupported: ${checked.stderr || checked.code}`.slice(0, 120),
+        tlsMeta: parsed.tlsMeta,
+      };
+    }
+
+    child = spawn(SING_BOX_BIN, ["run", "-c", configPath], { stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      if (stderr.length < 4000) stderr += chunk.toString("utf8");
+    });
+
+    const ready = await waitForPort(port, child, 2500);
+    if (!ready) {
+      return {
+        tested: false,
+        ok: false,
+        latencyMs: 0,
+        error: `sing-box startup failed: ${stderr || child.exitCode || "not ready"}`.slice(0, 120),
+        tlsMeta: parsed.tlsMeta,
+      };
+    }
+
+    const curl = await runCommand("curl", [
+      "-sS",
+      "--socks5-hostname", `127.0.0.1:${port}`,
+      "--connect-timeout", String(Math.max(2, Math.ceil(PROTOCOL_TIMEOUT_MS / 2000))),
+      "--max-time", String(Math.max(4, Math.ceil(PROTOCOL_TIMEOUT_MS / 1000))),
+      "-o", "/dev/null",
+      TEST_URL,
+    ], PROTOCOL_TIMEOUT_MS + 1500);
+
+    return {
+      tested: true,
+      ok: curl.code === 0,
+      latencyMs: curl.code === 0 ? Math.max(1, Date.now() - started) : 0,
+      error: curl.code === 0 ? "" : `protocol request failed: ${curl.stderr || `exit ${curl.code}`}`.slice(0, 120),
+      tlsMeta: parsed.tlsMeta,
+    };
+  } catch (error) {
+    return {
+      tested: false,
+      ok: false,
+      latencyMs: 0,
+      error: String(error?.message || error).slice(0, 120),
+      tlsMeta: parsed.tlsMeta,
+    };
+  } finally {
+    if (child && child.exitCode === null) {
+      try { child.kill("SIGTERM"); } catch {}
+      await sleep(30);
+      if (child.exitCode === null) { try { child.kill("SIGKILL"); } catch {} }
+    }
+    try { await fs.rm(tempDir, { recursive: true, force: true }); } catch {}
+  }
+}
+
 async function main() {
   console.log("Fetching health export from Worker...");
   const exportedResponse = await fetchJson(`${WORKER_URL}/health/export`, {
@@ -265,15 +783,16 @@ async function main() {
     const needsGeoRefresh = !/^[A-Z]{2}$/.test(currentCountry) || confidence === "low" || confidence === "unknown";
 
     let resolved;
-    if (needsGeoRefresh) {
+    if (needsGeoRefresh || !item.currentGeoIp) {
       resolved = await resolveHost(item.host);
     } else if (item.currentGeoIp && isPublicIp(item.currentGeoIp)) {
       resolved = {
         ip: normalizeHost(item.currentGeoIp),
         geoSource: net.isIP(normalizeHost(item.host)) ? "direct-ip" : "dns",
+        countryConfidence: net.isIP(normalizeHost(item.host)) ? "high" : "medium",
       };
     } else {
-      resolved = { ip: "", geoSource: "none" };
+      resolved = { ip: "", geoSource: "none", countryConfidence: "unknown" };
     }
 
     return { ...item, ...resolved, needsGeoRefresh };
@@ -293,39 +812,99 @@ async function main() {
   });
   const legacyFallback = await buildLegacyFallback(fallbackCandidates);
 
-  const probeRows = await mapLimit(resolvedRows, TCP_CONCURRENCY, async (item) => {
-    const protocol = String(item.protocol || "").toLowerCase();
-    let health;
-
+  console.log(`Running ${TCP_SAMPLES}-sample endpoint checks...`);
+  const endpointRows = await mapLimit(resolvedRows, TCP_CONCURRENCY, async (item) => {
+    const protocol = normalizeProtocol(item.protocol);
+    let endpointHealth;
     if (TCP_PROTOCOLS.has(protocol)) {
-      health = await tcpProbe(item.host, item.port);
+      endpointHealth = await tcpProbeSamples(item.host, item.port);
+    } else if (PROTOCOL_TEST_PROTOCOLS.has(protocol)) {
+      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, error: "deep protocol check required" };
     } else if (UDP_PROTOCOLS.has(protocol)) {
-      health = { ok: false, testable: false, latencyMs: 0, error: "UDP protocol not TCP-probed" };
+      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, error: "UDP protocol requires deep protocol support" };
     } else {
-      health = { ok: false, testable: false, latencyMs: 0, error: "Unsupported probe protocol" };
+      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, error: "Unsupported probe protocol" };
+    }
+    return { ...item, endpointHealth };
+  });
+
+  console.log("Running deep protocol checks with sing-box where supported...");
+  const deepRows = await mapLimit(endpointRows, PROTOCOL_CONCURRENCY, async (item) => {
+    if (!PROTOCOL_TEST_PROTOCOLS.has(normalizeProtocol(item.protocol)) || !item.raw) {
+      return { ...item, protocolProbe: { tested: false, ok: false, latencyMs: 0, error: "not supported" } };
+    }
+    return { ...item, protocolProbe: await deepProtocolProbe(item) };
+  });
+
+  const tlsRows = await mapLimit(deepRows, TCP_CONCURRENCY, async (item) => {
+    const tlsMeta = item.protocolProbe?.tlsMeta || parseProxyConfig(item.raw, item)?.tlsMeta || null;
+    if (!tlsMeta?.required || tlsMeta.reality || tlsMeta.quic) {
+      return { ...item, tlsProbe: { tested: false, ok: false, latencyMs: 0, error: "" } };
+    }
+    const result = await tlsProbe(item.host, item.port, tlsMeta.serverName, tlsMeta.insecure);
+    return { ...item, tlsProbe: { tested: true, ...result } };
+  });
+
+  const probeRows = tlsRows.map((item) => {
+    const protocol = normalizeProtocol(item.protocol);
+    const endpoint = item.endpointHealth || {};
+    const deep = item.protocolProbe || {};
+    const tlsResult = item.tlsProbe || {};
+
+    let testable = endpoint.testable !== false || deep.tested === true;
+    let finalOk = false;
+    let probeLevel = "unchecked";
+    let error = "";
+    let latencyMs = 0;
+
+    if (deep.tested) {
+      finalOk = deep.ok === true;
+      probeLevel = "protocol";
+      latencyMs = deep.latencyMs || endpoint.latencyMs || 0;
+      error = deep.error || "";
+    } else if (endpoint.testable !== false) {
+      finalOk = endpoint.ok === true;
+      probeLevel = "tcp";
+      latencyMs = endpoint.latencyMs || 0;
+      error = endpoint.error || deep.error || "";
+    } else {
+      testable = false;
+      probeLevel = "unverified";
+      error = deep.error || endpoint.error || "not testable";
     }
 
     let geo = null;
-    if (item.needsGeoRefresh && item.ip) geo = countries.get(item.ip) || null;
+    if (item.needsGeoRefresh && item.ip) {
+      geo = countries.get(item.ip) || null;
+      if (geo && item.geoSource === "direct-ip") geo = { ...geo, geoSource: "direct-ip", countryConfidence: "high" };
+    }
     if (!geo && item.needsGeoRefresh) geo = legacyFallback.get(normalizeHost(item.host)) || null;
-
     if (!geo && /^[A-Z]{2}$/.test(String(item.currentCountry || "").toUpperCase())) {
       geo = {
         country: String(item.currentCountry).toUpperCase(),
         org: "",
         ip: item.currentGeoIp || item.ip || "",
         geoSource: item.currentLocationConfidence === "low" ? "source-label" : (item.geoSource || "stored"),
+        countryConfidence: item.currentLocationConfidence || "low",
       };
     }
 
     return {
       fingerprint: item.fingerprint,
-      testable: health.testable !== false,
-      ok: health.ok === true,
-      latencyMs: health.latencyMs || 0,
-      error: health.error || "",
+      testable,
+      ok: finalOk,
+      latencyMs,
+      sampleCount: endpoint.sampleCount || 0,
+      sampleSuccessRate: endpoint.sampleCount ? Math.round(((endpoint.successfulSamples || 0) / endpoint.sampleCount) * 10000) / 10000 : (deep.tested ? (deep.ok ? 1 : 0) : 0),
+      error,
+      protocolTested: deep.tested === true,
+      protocolOk: deep.tested === true && deep.ok === true,
+      tlsTested: tlsResult.tested === true,
+      tlsOk: tlsResult.tested === true && tlsResult.ok === true,
+      probeLevel,
       ip: geo?.ip || item.ip || "",
       country: geo?.country || "",
+      countryConfidence: geo?.countryConfidence || item.countryConfidence || "unknown",
       org: geo?.org || "",
       geoSource: geo?.geoSource || item.geoSource || "none",
     };
@@ -335,19 +914,24 @@ async function main() {
   const healthy = results.filter((row) => row.testable && row.ok).length;
   const failed = results.filter((row) => row.testable && !row.ok).length;
   const untestable = results.filter((row) => !row.testable).length;
+  const protocolTested = results.filter((row) => row.protocolTested).length;
+  const protocolHealthy = results.filter((row) => row.protocolTested && row.protocolOk).length;
+  const tlsTested = results.filter((row) => row.tlsTested).length;
+  const tlsHealthy = results.filter((row) => row.tlsTested && row.tlsOk).length;
   const located = results.filter((row) => /^[A-Z]{2}$/.test(row.country)).length;
   const unresolved = results.length - located;
   const legacyLocated = results.filter((row) => row.geoSource === "legacy-domain" && /^[A-Z]{2}$/.test(row.country)).length;
 
   console.log(
     `Health result: healthy=${healthy}, failed=${failed}, untestable=${untestable}, ` +
+    `protocol=${protocolHealthy}/${protocolTested}, tls=${tlsHealthy}/${tlsTested}, ` +
     `located=${located}/${results.length}, unresolved=${unresolved}, legacyLocated=${legacyLocated}`
   );
 
   const payload = {
     generation: exported.generation || "",
     checkedAt: Date.now(),
-    runner: "github-actions",
+    runner: "github-actions-sing-box",
     results,
   };
 
