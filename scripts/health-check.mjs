@@ -15,6 +15,7 @@ const DNS_TIMEOUT_MS = Number(process.env.DNS_TIMEOUT_MS || 3000);
 const PROTOCOL_TIMEOUT_MS = Number(process.env.PROTOCOL_TIMEOUT_MS || 8000);
 const DNS_CONCURRENCY = Number(process.env.DNS_CONCURRENCY || 60);
 const TCP_CONCURRENCY = Number(process.env.TCP_CONCURRENCY || 60);
+const ENDPOINT_CONCURRENCY = Math.max(1, Number(process.env.ENDPOINT_CONCURRENCY || Math.min(DNS_CONCURRENCY, TCP_CONCURRENCY)));
 const PROTOCOL_CONCURRENCY = Number(process.env.PROTOCOL_CONCURRENCY || 18);
 const TCP_SAMPLES = Math.max(1, Math.min(5, Number(process.env.TCP_SAMPLES || 3)));
 const LEGACY_GEO_CONCURRENCY = Number(process.env.LEGACY_GEO_CONCURRENCY || 4);
@@ -31,6 +32,7 @@ const TCP_PROTOCOLS = new Set(["vless", "vmess", "trojan", "ss", "ssr", "ssh"]);
 const PROTOCOL_TEST_PROTOCOLS = new Set(["vless", "vmess", "trojan", "ss", "hysteria2", "tuic"]);
 const UDP_PROTOCOLS = new Set(["hysteria", "hysteria2", "tuic", "wireguard"]);
 const U_TLS_FINGERPRINTS = new Set(["chrome", "firefox", "safari", "edge", "ios", "android", "random", "randomized"]);
+const RESERVED_LOCAL_PORTS = new Set();
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -118,9 +120,25 @@ async function withTimeout(promise, ms, label) {
   }
 }
 
+function isTransientStatus(status) {
+  const code = Number(status);
+  return code === 408 || code === 425 || code === 429 || (code >= 500 && code <= 599);
+}
+
+function retryAfterMsFrom(error, fallbackMs) {
+  const fromData = Number(error?.data?.retryAfterSeconds);
+  if (Number.isFinite(fromData) && fromData > 0) return Math.max(1000, Math.min(120000, fromData * 1000));
+  const header = error?.headers?.get?.("retry-after");
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds > 0) return Math.max(1000, Math.min(120000, seconds * 1000));
+  return fallbackMs;
+}
+
 async function fetchJson(url, options = {}, retries = 3) {
   let lastError;
-  for (let attempt = 1; attempt <= retries; attempt += 1) {
+  const attempts = Math.max(1, Number(retries) || 1);
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 20000);
@@ -130,25 +148,32 @@ async function fetchJson(url, options = {}, retries = 3) {
       } finally {
         clearTimeout(timer);
       }
+
       const text = await response.text();
       let data = null;
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+      try { data = text ? JSON.parse(text) : {}; }
+      catch { data = { raw: text }; }
+
       if (!response.ok) {
         const error = new Error(`HTTP ${response.status}: ${data?.error || text || response.statusText}`);
         error.status = response.status;
         error.data = data;
+        error.headers = response.headers;
         throw error;
       }
-      return { data, headers: response.headers };
+      return { data, headers: response.headers, status: response.status };
     } catch (error) {
       lastError = error;
-      if (attempt >= retries) break;
-      await sleep(1500 * attempt);
+      const transient = !Number.isFinite(Number(error?.status)) || isTransientStatus(error?.status);
+      if (!transient || attempt >= attempts) break;
+      const base = Math.min(10000, 700 * (2 ** (attempt - 1)));
+      const waitMs = retryAfterMsFrom(error, base + Math.floor(Math.random() * 300));
+      await sleep(waitMs);
     }
   }
+
   throw lastError;
 }
-
 async function mapLimit(items, limit, fn) {
   const results = new Array(items.length);
   let index = 0;
@@ -311,35 +336,27 @@ async function lookupCountries(ips) {
   return result;
 }
 
-async function legacyLookupHost(host) {
+async function resolveHostHttpsFallback(host) {
   const normalized = normalizeHost(host);
-  if (!normalized) return null;
+  if (!normalized || net.isIP(normalized)) return isPublicIp(normalized) ? normalized : "";
 
-  try {
-    const response = await fetchJson(
-      `http://ip-api.com/json/${encodeURIComponent(normalized)}?fields=status,message,countryCode,query,org`,
-      { headers: { accept: "application/json" } },
-      2
-    );
-    const row = response.data;
-    const country = String(row?.countryCode || "").toUpperCase();
-    const ip = normalizeHost(row?.query || "");
-    if (row?.status !== "success" || !/^[A-Z]{2}$/.test(country)) return null;
+  const providers = [
+    `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(normalized)}&type=A`,
+    `https://dns.google/resolve?name=${encodeURIComponent(normalized)}&type=A`,
+  ];
 
-    const remaining = Number(response.headers.get("x-rl") || 1);
-    const ttl = Number(response.headers.get("x-ttl") || 0);
-    if (remaining <= 0 && ttl > 0) await sleep(Math.min(ttl * 1000, 60000));
-
-    return {
-      country,
-      org: String(row?.org || "").slice(0, 160),
-      ip: isPublicIp(ip) ? ip : "",
-      geoSource: "legacy-domain",
-      countryConfidence: "low",
-    };
-  } catch {
-    return null;
+  for (const url of providers) {
+    try {
+      const response = await fetchJson(url, { headers: { accept: "application/dns-json" } }, 2);
+      const answers = Array.isArray(response.data?.Answer) ? response.data.Answer : [];
+      const ips = answers
+        .map((row) => normalizeHost(row?.data || ""))
+        .filter(isPublicIp)
+        .sort();
+      if (ips.length) return ips[0];
+    } catch {}
   }
+  return "";
 }
 
 async function buildLegacyFallback(items) {
@@ -353,15 +370,24 @@ async function buildLegacyFallback(items) {
   const hosts = [...hostMap.keys()].slice(0, LEGACY_GEO_MAX_PER_RUN);
   if (!hosts.length) return new Map();
 
-  console.log(`Legacy fallback geolocation for ${hosts.length} unresolved/low-confidence hosts...`);
-  const rows = await mapLimit(hosts, LEGACY_GEO_CONCURRENCY, async (host) => {
-    const geo = await legacyLookupHost(host);
-    return { host, geo };
-  });
+  console.log(`HTTPS fallback geolocation for ${hosts.length} unresolved hosts...`);
+  const resolved = await mapLimit(hosts, LEGACY_GEO_CONCURRENCY, async (host) => ({
+    host,
+    ip: await resolveHostHttpsFallback(host),
+  }));
 
+  const countryByIp = await lookupCountries(resolved.map((row) => row?.ip).filter(isPublicIp));
   const result = new Map();
-  for (const row of rows) {
-    if (row?.host && row?.geo?.country) result.set(row.host, row.geo);
+  for (const row of resolved) {
+    if (!row?.host || !isPublicIp(row.ip)) continue;
+    const geo = countryByIp.get(row.ip);
+    if (!geo?.country) continue;
+    result.set(row.host, {
+      ...geo,
+      ip: row.ip,
+      geoSource: "https-doh-fallback",
+      countryConfidence: "medium",
+    });
   }
   return result;
 }
@@ -641,16 +667,30 @@ function parseProxyConfig(raw, item) {
 }
 
 async function getFreePort() {
-  return await new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      const port = typeof address === "object" && address ? address.port : 0;
-      server.close((error) => error ? reject(error) : resolve(port));
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const port = await new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.unref();
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", () => {
+        const address = server.address();
+        const selected = typeof address === "object" && address ? address.port : 0;
+        server.close((error) => error ? reject(error) : resolve(selected));
+      });
     });
-  });
+    if (!port || RESERVED_LOCAL_PORTS.has(port)) continue;
+    RESERVED_LOCAL_PORTS.add(port);
+    return port;
+  }
+  throw new Error("Unable to reserve a unique local port");
+}
+
+function releaseFreePort(port) {
+  RESERVED_LOCAL_PORTS.delete(Number(port));
+}
+
+function isBindConflict(value) {
+  return /address already in use|eaddrinuse|bind.*failed|listen.*failed/i.test(String(value || ""));
 }
 
 async function waitForPort(port, child, timeoutMs = 2500) {
@@ -675,36 +715,25 @@ async function runCommand(command, args, timeoutMs) {
   return await new Promise((resolve) => {
     const child = spawn(command, args, { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    };
     const timer = setTimeout(() => {
       try { child.kill("SIGKILL"); } catch {}
     }, timeoutMs);
     child.stderr.on("data", (chunk) => {
       if (stderr.length < 4000) stderr += chunk.toString("utf8");
     });
-    child.once("error", (error) => {
-      clearTimeout(timer);
-      resolve({ code: -1, stderr: String(error?.message || error) });
-    });
-    child.once("exit", (code) => {
-      clearTimeout(timer);
-      resolve({ code: Number.isInteger(code) ? code : -1, stderr: stderr.slice(-1000) });
-    });
+    child.once("error", (error) => finish({ code: -1, stderr: String(error?.message || error) }));
+    child.once("exit", (code) => finish({ code: Number.isInteger(code) ? code : -1, stderr: stderr.slice(-1000) }));
   });
 }
 
-async function deepProtocolProbe(item) {
-  const parsed = parseProxyConfig(item.raw, item);
-  if (!parsed.supported) {
-    return {
-      tested: false,
-      ok: false,
-      latencyMs: 0,
-      error: parsed.reason || "deep parser unavailable",
-      tlsMeta: parsed.tlsMeta || null,
-    };
-  }
-
-  const port = await getFreePort();
+async function deepProtocolProbeOnPort(item, parsed, port) {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "papa-vpn-"));
   const configPath = path.join(tempDir, "config.json");
   const config = {
@@ -723,6 +752,7 @@ async function deepProtocolProbe(item) {
       return {
         tested: false,
         ok: false,
+        bindConflict: false,
         latencyMs: 0,
         error: `sing-box config unsupported: ${checked.stderr || checked.code}`.slice(0, 120),
         tlsMeta: parsed.tlsMeta,
@@ -737,11 +767,13 @@ async function deepProtocolProbe(item) {
 
     const ready = await waitForPort(port, child, 2500);
     if (!ready) {
+      const message = `sing-box startup failed: ${stderr || child.exitCode || "not ready"}`.slice(0, 120);
       return {
         tested: false,
         ok: false,
+        bindConflict: isBindConflict(message),
         latencyMs: 0,
-        error: `sing-box startup failed: ${stderr || child.exitCode || "not ready"}`.slice(0, 120),
+        error: message,
         tlsMeta: parsed.tlsMeta,
       };
     }
@@ -758,16 +790,19 @@ async function deepProtocolProbe(item) {
     return {
       tested: true,
       ok: curl.code === 0,
+      bindConflict: false,
       latencyMs: curl.code === 0 ? Math.max(1, Date.now() - started) : 0,
       error: curl.code === 0 ? "" : `protocol request failed: ${curl.stderr || `exit ${curl.code}`}`.slice(0, 120),
       tlsMeta: parsed.tlsMeta,
     };
   } catch (error) {
+    const message = String(error?.message || error).slice(0, 120);
     return {
       tested: false,
       ok: false,
+      bindConflict: isBindConflict(message),
       latencyMs: 0,
-      error: String(error?.message || error).slice(0, 120),
+      error: message,
       tlsMeta: parsed.tlsMeta,
     };
   } finally {
@@ -778,6 +813,43 @@ async function deepProtocolProbe(item) {
     }
     try { await fs.rm(tempDir, { recursive: true, force: true }); } catch {}
   }
+}
+
+async function deepProtocolProbe(item) {
+  const parsed = parseProxyConfig(item.raw, item);
+  if (!parsed.supported) {
+    return {
+      tested: false,
+      ok: false,
+      latencyMs: 0,
+      error: parsed.reason || "deep parser unavailable",
+      tlsMeta: parsed.tlsMeta || null,
+    };
+  }
+
+  let lastResult = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const port = await getFreePort();
+    try {
+      const result = await deepProtocolProbeOnPort(item, parsed, port);
+      lastResult = result;
+      if (!result.bindConflict) {
+        const { bindConflict, ...publicResult } = result;
+        return publicResult;
+      }
+    } finally {
+      releaseFreePort(port);
+    }
+    await sleep(50 * attempt);
+  }
+
+  return {
+    tested: false,
+    ok: false,
+    latencyMs: 0,
+    error: (lastResult?.error || "local proxy port allocation failed").slice(0, 120),
+    tlsMeta: parsed.tlsMeta || null,
+  };
 }
 
 async function main() {
@@ -791,30 +863,36 @@ async function main() {
   console.log(`Received ${items.length} unique endpoints; generation=${exported.generation || "unknown"}`);
   if (!items.length) return;
 
-  console.log(`Resolving fresh endpoint IPs for ${items.length} configs...`);
-  const resolvedRows = await mapLimit(items, DNS_CONCURRENCY, async (item) => {
-    const resolved = await resolveHost(item.host);
-    return {
-      ...item,
+  console.time("stage:dns-tcp");
+  const endpointRows = await mapLimit(items, ENDPOINT_CONCURRENCY, async (rawItem) => {
+    const resolved = await resolveHost(rawItem.host);
+    const item = {
+      ...rawItem,
       ...resolved,
-      currentCountry: String(item.currentCountry || "").toUpperCase(),
-      currentLocationConfidence: String(item.currentLocationConfidence || "unknown").toLowerCase(),
-      currentGeoSource: String(item.currentGeoSource || "stored"),
+      currentCountry: String(rawItem.currentCountry || "").toUpperCase(),
+      currentLocationConfidence: String(rawItem.currentLocationConfidence || "unknown").toLowerCase(),
+      currentGeoSource: String(rawItem.currentGeoSource || "stored"),
     };
-  });
 
-  console.log(`Running ${TCP_SAMPLES}-sample endpoint checks...`);
-  const endpointRows = await mapLimit(resolvedRows, TCP_CONCURRENCY, async (item) => {
     const protocol = normalizeProtocol(item.protocol);
     let endpointHealth;
     if (TCP_PROTOCOLS.has(protocol)) {
       endpointHealth = await tcpProbeSamples(item.host, item.port);
     } else if (PROTOCOL_TEST_PROTOCOLS.has(protocol)) {
-      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, remoteIp: "", error: "deep protocol check required" };
+      endpointHealth = {
+        ok: false, testable: false, latencyMs: 0, sampleCount: 0,
+        successfulSamples: 0, remoteIp: "", error: "deep protocol check required",
+      };
     } else if (UDP_PROTOCOLS.has(protocol)) {
-      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, remoteIp: "", error: "UDP protocol requires deep protocol support" };
+      endpointHealth = {
+        ok: false, testable: false, latencyMs: 0, sampleCount: 0,
+        successfulSamples: 0, remoteIp: "", error: "UDP protocol requires deep protocol support",
+      };
     } else {
-      endpointHealth = { ok: false, testable: false, latencyMs: 0, sampleCount: 0, successfulSamples: 0, remoteIp: "", error: "Unsupported probe protocol" };
+      endpointHealth = {
+        ok: false, testable: false, latencyMs: 0, sampleCount: 0,
+        successfulSamples: 0, remoteIp: "", error: "Unsupported probe protocol",
+      };
     }
 
     const connectedIp = isPublicIp(normalizeHost(endpointHealth.remoteIp || ""))
@@ -824,9 +902,10 @@ async function main() {
     const preferredGeoSource = net.isIP(normalizeHost(item.host))
       ? "direct-ip"
       : connectedIp ? "tcp-remote-ip" : item.geoSource;
-    const preferredCountryConfidence = preferredGeoSource === "direct-ip" || preferredGeoSource === "tcp-remote-ip"
-      ? "high"
-      : preferredGeoIp ? "medium" : "unknown";
+    const preferredCountryConfidence =
+      preferredGeoSource === "direct-ip" || preferredGeoSource === "tcp-remote-ip"
+        ? "high"
+        : preferredGeoIp ? "medium" : "unknown";
 
     return {
       ...item,
@@ -836,26 +915,37 @@ async function main() {
       preferredCountryConfidence,
     };
   });
+  console.timeEnd("stage:dns-tcp");
 
-  const geoLookupIps = endpointRows.map((item) => item.preferredGeoIp).filter(isPublicIp);
+  const geoLookupIps = endpointRows.map((item) => item?.preferredGeoIp).filter(isPublicIp);
   console.log(`Resolving country for ${new Set(geoLookupIps).size} freshly resolved/connected IP addresses...`);
+  console.time("stage:country-lookup");
   const countries = await lookupCountries(geoLookupIps);
+  console.timeEnd("stage:country-lookup");
 
   const fallbackCandidates = endpointRows.filter((item) => {
+    if (!item) return false;
     if (item.preferredGeoIp && countries.has(item.preferredGeoIp)) return false;
     return true;
   });
+
+  console.time("stage:https-geo-fallback");
   const legacyFallback = await buildLegacyFallback(fallbackCandidates);
+  console.timeEnd("stage:https-geo-fallback");
 
   console.log("Running deep protocol checks with sing-box where supported...");
+  console.time("stage:deep-protocol");
   const deepRows = await mapLimit(endpointRows, PROTOCOL_CONCURRENCY, async (item) => {
-    if (!PROTOCOL_TEST_PROTOCOLS.has(normalizeProtocol(item.protocol)) || !item.raw) {
+    if (!item || !PROTOCOL_TEST_PROTOCOLS.has(normalizeProtocol(item.protocol)) || !item.raw) {
       return { ...item, protocolProbe: { tested: false, ok: false, latencyMs: 0, error: "not supported" } };
     }
     return { ...item, protocolProbe: await deepProtocolProbe(item) };
   });
+  console.timeEnd("stage:deep-protocol");
 
+  console.time("stage:tls-probe");
   const tlsRows = await mapLimit(deepRows, TCP_CONCURRENCY, async (item) => {
+    if (!item) return item;
     const tlsMeta = item.protocolProbe?.tlsMeta || parseProxyConfig(item.raw, item)?.tlsMeta || null;
     if (!tlsMeta?.required || tlsMeta.reality || tlsMeta.quic) {
       return { ...item, tlsProbe: { tested: false, ok: false, latencyMs: 0, error: "" } };
@@ -863,9 +953,10 @@ async function main() {
     const result = await tlsProbe(item.host, item.port, tlsMeta.serverName, tlsMeta.insecure);
     return { ...item, tlsProbe: { tested: true, ...result } };
   });
+  console.timeEnd("stage:tls-probe");
 
   const probeRows = tlsRows.map((item) => {
-    const protocol = normalizeProtocol(item.protocol);
+    if (!item) return null;
     const endpoint = item.endpointHealth || {};
     const deep = item.protocolProbe || {};
     const tlsResult = item.tlsProbe || {};
@@ -921,7 +1012,9 @@ async function main() {
       ok: finalOk,
       latencyMs,
       sampleCount: endpoint.sampleCount || 0,
-      sampleSuccessRate: endpoint.sampleCount ? Math.round(((endpoint.successfulSamples || 0) / endpoint.sampleCount) * 10000) / 10000 : (deep.tested ? (deep.ok ? 1 : 0) : 0),
+      sampleSuccessRate: endpoint.sampleCount
+        ? Math.round(((endpoint.successfulSamples || 0) / endpoint.sampleCount) * 10000) / 10000
+        : (deep.tested ? (deep.ok ? 1 : 0) : 0),
       error,
       protocolTested: deep.tested === true,
       protocolOk: deep.tested === true && deep.ok === true,
@@ -946,12 +1039,12 @@ async function main() {
   const tlsHealthy = results.filter((row) => row.tlsTested && row.tlsOk).length;
   const located = results.filter((row) => /^[A-Z]{2}$/.test(row.country)).length;
   const unresolved = results.length - located;
-  const legacyLocated = results.filter((row) => row.geoSource === "legacy-domain" && /^[A-Z]{2}$/.test(row.country)).length;
+  const fallbackLocated = results.filter((row) => row.geoSource === "https-doh-fallback" && /^[A-Z]{2}$/.test(row.country)).length;
 
   console.log(
     `Health result: healthy=${healthy}, failed=${failed}, untestable=${untestable}, ` +
     `protocol=${protocolHealthy}/${protocolTested}, tls=${tlsHealthy}/${tlsTested}, ` +
-    `located=${located}/${results.length}, unresolved=${unresolved}, legacyLocated=${legacyLocated}`
+    `located=${located}/${results.length}, unresolved=${unresolved}, httpsFallbackLocated=${fallbackLocated}`
   );
 
   const payload = {
@@ -962,7 +1055,7 @@ async function main() {
   };
 
   let lastError;
-  const maxReportAttempts = 12;
+  const maxReportAttempts = 10;
   for (let attempt = 1; attempt <= maxReportAttempts; attempt += 1) {
     try {
       const reportResponse = await fetchJson(`${WORKER_URL}/health/report`, {
@@ -978,26 +1071,29 @@ async function main() {
       return;
     } catch (error) {
       lastError = error;
-      if (error?.status !== 409) break;
-
-      if (/generation/i.test(error.message || "")) {
+      const status = Number(error?.status);
+      const networkFailure = !Number.isFinite(status) || status <= 0;
+      const generationChanged = status === 409 && /generation/i.test(error?.message || "");
+      if (generationChanged) {
         console.log("Generation changed while this health run was executing. Skipping this stale report; the next run will test the new bank.");
         return;
       }
 
-      if (attempt >= maxReportAttempts) break;
-      const retryAfter = Number(error?.data?.retryAfterSeconds);
-      const waitSeconds = Number.isFinite(retryAfter)
-        ? Math.max(5, Math.min(60, Math.ceil(retryAfter)))
-        : 15;
-      console.log(`Worker is updating; retrying report in ${waitSeconds}s (${attempt}/${maxReportAttempts})...`);
-      await sleep(waitSeconds * 1000);
+      const retryable = networkFailure || status === 409 || isTransientStatus(status);
+      if (!retryable || attempt >= maxReportAttempts) break;
+
+      const exponential = Math.min(60000, 2000 * (2 ** Math.min(5, attempt - 1)));
+      const waitMs = retryAfterMsFrom(error, exponential + Math.floor(Math.random() * 1000));
+      console.log(
+        `Health report failed${status ? ` with HTTP ${status}` : ""}; ` +
+        `retrying in ${Math.ceil(waitMs / 1000)}s (${attempt}/${maxReportAttempts})...`
+      );
+      await sleep(waitMs);
     }
   }
 
   throw lastError;
 }
-
 main().catch((error) => {
   console.error(error?.stack || error?.message || String(error));
   process.exitCode = 1;
