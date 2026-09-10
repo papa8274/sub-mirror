@@ -15,7 +15,7 @@ permissions:
 jobs:
   health-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -26,14 +26,32 @@ jobs:
           node-version: "24"
           package-manager-cache: false
 
-      - name: Run health and geolocation checks
+      - name: Install sing-box
+        env:
+          SING_BOX_VERSION: "1.14.0"
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 \
+            "https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}/sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz" \
+            -o /tmp/sing-box.tar.gz
+          tar -xzf /tmp/sing-box.tar.gz -C /tmp
+          sudo install -m 0755 "/tmp/sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box" /usr/local/bin/sing-box
+          sing-box version
+
+      - name: Run health, protocol, TLS and geolocation checks
         env:
           WORKER_URL: ${{ secrets.WORKER_URL }}
           WORKER_HEALTH_SECRET: ${{ secrets.WORKER_HEALTH_SECRET }}
+          SING_BOX_BIN: "/usr/local/bin/sing-box"
           TCP_TIMEOUT_MS: "3500"
+          TLS_TIMEOUT_MS: "4000"
           DNS_TIMEOUT_MS: "3000"
+          PROTOCOL_TIMEOUT_MS: "8000"
           DNS_CONCURRENCY: "60"
-          TCP_CONCURRENCY: "80"
+          TCP_CONCURRENCY: "60"
+          PROTOCOL_CONCURRENCY: "18"
+          TCP_SAMPLES: "3"
           LEGACY_GEO_CONCURRENCY: "4"
-          LEGACY_GEO_MAX_PER_RUN: "40"
+          LEGACY_GEO_MAX_PER_RUN: "45"
+          PROTOCOL_TEST_URL: "https://cp.cloudflare.com/generate_204"
         run: node scripts/health-check.mjs
