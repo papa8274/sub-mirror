@@ -22,6 +22,7 @@ const LEGACY_GEO_CONCURRENCY = Number(process.env.LEGACY_GEO_CONCURRENCY || 4);
 const LEGACY_GEO_MAX_PER_RUN = Math.min(45, Number(process.env.LEGACY_GEO_MAX_PER_RUN || 45));
 const COUNTRY_BATCH_SIZE = 100;
 const TEST_URL = String(process.env.PROTOCOL_TEST_URL || "https://cp.cloudflare.com/generate_204");
+const CDN_ORG_PATTERN = /cloudflare|akamai|fastly|cloudfront|cdn|edgecast|imperva/i;
 
 if (!WORKER_URL || !/^https:\/\//i.test(WORKER_URL)) {
   throw new Error("WORKER_URL must be a valid https:// URL");
@@ -1004,6 +1005,9 @@ async function main() {
         geoSource: item.currentGeoSource || (item.currentLocationConfidence === "low" ? "source-label" : "stored"),
         countryConfidence: item.currentLocationConfidence || "low",
       };
+    }
+    if (geo && geo.countryConfidence === "high" && CDN_ORG_PATTERN.test(String(geo.org || ""))) {
+      geo.countryConfidence = "low";
     }
 
     return {
