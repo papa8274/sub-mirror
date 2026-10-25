@@ -1,3 +1,4 @@
+vless://ed7f8d66-74c8-494b-bd4f-5775de4808cf@Ip6khalijefars.Varzumo.ir:11760?security=reality&encryption=none&pbk=sAbzBeKthg8yldpdpbGdPgcls3LVTPqddHooKqhJgW0&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=www.yahoo.com&sid=adabaf316115b22f#%F0%9F%8C%90%20A1%20papa%20111730
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@104.254.140.40:8880?security=none&type=ws&path=/?ed=2560&host=vms.lifetime54.workers.dev&packetEncoding=xudp&encryption=none#%F0%9F%8C%90%20A2%20papa%20111729
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@185.158.133.30:8880?security=none&type=ws&path=/&host=vms.lifetime58.workers.dev&packetEncoding=xudp#%F0%9F%8C%90%20A2%20papa%20111728
 vless://109ce6c1-e188-44df-bf63-6795261f793b@fi.salfetkastroy.ru:443?security=reality&encryption=none&pbk=QTTneNQLYl_-Q0JbPyQWe2GpLUeL7JPl4P-5h0El6S8&headerType=none&fp=firefox&type=tcp&flow=xtls-rprx-vision&sni=fi.salfetkastroy.ru&sid=f9989b69a77d0f3c#%F0%9F%87%AB%F0%9F%87%AE%20A2%20papa%20111727
@@ -97,4 +98,3 @@ vless://794d4abd-e92b-4f94-ab92-d4a5adbe2e03@199.232.78.159:443?pcs=CD6E838B9BFE
 vless://794d4abd-e92b-4f94-ab92-d4a5adbe2e03@146.75.59.186:443?pcs=CD6E838B9BFE31CAB8B3D5C858B0D6223FE84ECE236C1FDB281BE93C302E1E6E&path=%2F&security=tls&encryption=none&host=netheri.global.ssl.fastly.net.&fp=ios&type=ws&allowInsecure=0&sni=firefox.com#%F0%9F%8C%90%20A2%20papa%20111638
 vless://e4514801-0d5a-42ba-869f-39bd605aef9e@15.224.0.9:22224?encryption=none&security=none&type=tcp#%F0%9F%87%AB%F0%9F%87%B7%20A2%20papa%20111637
 vless://e4514801-0d5a-42ba-869f-39bd605aef9e@15.224.0.9:22223?encryption=none&security=none&type=tcp#%F0%9F%87%AB%F0%9F%87%B7%20A2%20papa%20111636
-vless://e4514801-0d5a-42ba-869f-39bd605aef9e@15.224.0.9:22222?encryption=none&security=none&type=tcp#%F0%9F%87%AB%F0%9F%87%B7%20A2%20papa%20111635
