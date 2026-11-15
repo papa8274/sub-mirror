@@ -1,3 +1,13 @@
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNToyRWY4WDIxV0FMcUs3SDZOOEE3OGo1V1l0elo5OTlQUDhyRjhEYUxzYjVMTHlETFFwZjVkR1ZBamRBM21qMXd1ZGlnS1hUdDVoZVlVOWptYUJiZnhYQkpKQXFoUEhreGU@194.87.233.93:46190#%F0%9F%87%A8%F0%9F%87%BF%20C%20papa%20136897
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTptcnMyZTlh@54.36.174.140:443#%F0%9F%87%AB%F0%9F%87%B7%20C%20papa%20136896
+ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0=@185.164.175.81:19999#%F0%9F%87%BA%F0%9F%87%A6%20C%20papa%20136895
+ss://YWVzLTEyOC1nY206c2hhZG93c29ja3M@158.173.24.73:443#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20136894
+ss://YWVzLTI1Ni1nY206UmV4bkJnVTdFVjVBRHhH@94.156.250.148:7001#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20136893
+ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0@38.109.228.110:19999#%F0%9F%87%AB%F0%9F%87%B7%20C%20papa%20136892
+ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0@167.17.64.27:19999#%F0%9F%87%AB%F0%9F%87%B7%20C%20papa%20136891
+ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0@79.127.184.104:19999#%F0%9F%87%A8%F0%9F%87%AD%20C%20papa%20136890
+ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0@66.163.118.103:19999#%F0%9F%87%AA%F0%9F%87%B8%20C%20papa%20136889
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpteDgxZ2xxYnRsd3VoY2pv@57.131.4.13:8080#%F0%9F%87%AE%F0%9F%87%B9%20A2%20papa%20133776
 vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@15.204.97.206:23576?security=reality&encryption=none&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&host=/?TELEGRAM---MARAMBASHI---MARAMBASHI---MARAMBASHI---MARAMBASHI&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=fuck.rkn&sid=01#%F0%9F%87%BA%F0%9F%87%B8%20A1%20papa%20136878
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTp6aU9lS2VqaGh3K2ZtV2V0K3h2dUpzVkpIN1U5RHZTV3ExaGxxdGFLditJPQ@130.49.189.158:43558#%F0%9F%87%B7%F0%9F%87%BA%20C%20papa%20136888
 vless://6202b230-417c-4d8e-b624-0f71afa9c75d@162.120.94.30:8880?&type=ws&headerType=none&host=vms.lifetime07.workers.dev&path=%2F#%F0%9F%8C%90%20C%20papa%20136887
@@ -88,13 +98,3 @@ vless://9c96c038-8a1f-49b0-bb54-396533e082ab@lv.asasin1.ir:4510?encryption=none&
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpfYzQzdVYwX196dEZoc2hudVk0UnZoVk9DMkZneENqQQ==@dns24.m3hrzd.ir:1352#%F0%9F%87%A9%F0%9F%87%AA%20A2%20papa%20136835
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpfYzQzdVYwX196dEZoc2hudVk0UnZoVk9DMkZneENqQQ==@dns24.m3hrzd.ir:1349#%F0%9F%87%A9%F0%9F%87%AA%20A2%20papa%20136834
 vless://9c96c038-8a1f-49b0-bb54-396533e082ab@lkxljwpbkn.sodogodping.ir:4530?encryption=none&type=ws&security=tls&sni=Tunnl.pasarguardspeed.ir&fp=chrome&path=%2F&host=Tunnl.pasarguardspeed.ir#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20136833
-vmess://eyJhZGQiOiJta2lveTc4OWotcHJvZHVjdGlvbi51cC5yYWlsd2F5LmFwcCIsImFpZCI6IjAiLCJob3N0IjoibWtpb3k3ODlqLXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAiLCJpZCI6IjIxNjVhMTVjLTUzZjItNGI3MC1iYjYzLWQxODhjOGM3MWYyZCIsIm5ldCI6IndzIiwicGF0aCI6Ii9hcGkvYVZNNXFqIiwicG9ydCI6IjQ0MyIsInBzIjoi8J+HuvCfh7ggQTIgcGFwYSAxMzY4MzIiLCJzY3kiOiJhdXRvIiwic25pIjoibWtpb3k3ODlqLXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAiLCJ0bHMiOiJ0bHMiLCJ0eXBlIjoibm9uZSIsInYiOiIyIn0=
-vless://9866c493-2cb9-4c4b-b2be-884ff3c33f3f@192.248.183.55:443?security=reality&encryption=none&pbk=0cF80-KndK-vhrUSuy0xTeN9XPhK_pOjOOIFKUQCwgA&headerType=&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=dl.google.com&sid=9577aefc8ce16d63#%F0%9F%87%A9%F0%9F%87%AA%20A2%20papa%20136831
-vless://2ce990bc-fe98-44c0-9327-a4b15ce0c6ea@92.113.145.102:443?security=reality&encryption=none&pbk=Tk8-i0eBXYO5MBPQPfh4ha9ZDJz3JpZAgwte0yqe9gY&headerType=&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=dl.google.com&sid=c5bb1edc40af6b77#%F0%9F%87%A9%F0%9F%87%B0%20A2%20papa%20136846
-ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@193.29.139.198:8080#%F0%9F%87%B3%F0%9F%87%B1%20A2%20papa%20136845
-trojan://X00HagvwL8gQXNDAnsxsN8dv1_VdneEo@38.180.101.235:5443?security=tls&sni=rs.nebulaguard.org&alpn=h2%2Chttp%2F1.1&fp=firefox#%F0%9F%87%B7%F0%9F%87%B8%20A2%20papa%20136844
-vless://b0511969-f769-460b-963b-70c6b84b6967@p1real4.greewebservices.ir:1260?encryption=none&fp=ios&pbk=xQnXh5EfPDhcEBB7rRiLca33GYrMEeUa35domLL_yA8&security=reality&sid=9b60d3&sni=play.googleapis.com&type=tcp#%F0%9F%87%A7%F0%9F%87%AC%20A2%20papa%20136843
-vless://b0511969-f769-460b-963b-70c6b84b6967@p11real3.greewebservices.ir:1040?encryption=none&fp=ios&pbk=xQnXh5EfPDhcEBB7rRiLca33GYrMEeUa35domLL_yA8&security=reality&sid=9b60d3&sni=play.googleapis.com&type=tcp#%F0%9F%87%A7%F0%9F%87%AC%20A2%20papa%20136842
-vless://073ddc87-7653-4886-b186-765644a3b760@fortash.zarghamweb.ir:41825?path=%2F&security=tls&alpn=h3%2Ch2%2Chttp%2F1.1&encryption=none&insecure=0&host=pasar.zarghamweb.ir&fp=firefox&type=ws&allowInsecure=0&sni=pasar.zarghamweb.ir#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20136841
-vless://b0511969-f769-460b-963b-70c6b84b6967@p11real2.greewebservices.ir:1030?encryption=none&fp=ios&pbk=xQnXh5EfPDhcEBB7rRiLca33GYrMEeUa35domLL_yA8&security=reality&sid=9b60d3&sni=play.googleapis.com&type=tcp#%F0%9F%87%A7%F0%9F%87%AC%20A2%20papa%20136840
-ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpfYzQzdVYwX196dEZoc2hudVk0UnZoVk9DMkZneENqQQ@185.4.115.146:8044?#%F0%9F%87%B3%F0%9F%87%B1%20A2%20papa%20136676
