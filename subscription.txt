@@ -1,3 +1,4 @@
+vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@51.158.206.97:23576?security=reality&encryption=none&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&host=/?Telegram—@bored_vpn&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=fuck.rkn&sid=01#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20136930
 vless://73bcd72f-9545-4cb8-8daf-7d004501880d@104.26.12.227:2096?&security=tls&fp=chrome&sni=shanxp.dpdns.org&type=ws&headerType=none&host=shanxp.dpdns.org&path=%2F#%F0%9F%8C%90%20C%20papa%20136929
 vless://234c52f2-0d7b-dc4a-0d6b-b0b300000025@104.27.2.172:80?security=none&type=ws&path=/sync&host=billowing-surf-d251.netizo06.workers.dev&packetEncoding=xudp&encryption=none#%F0%9F%8C%90%20C%20papa%20136928
 vless://080fad7c-ff4b-499f-ab5d-52d69ea5745a@185.207.197.12:80?path=%2Fpyip&security=&encryption=none&host=calm-tree-22b0.215-d2a.workers.dev&type=ws#%F0%9F%87%B2%F0%9F%87%AD%20C%20papa%20136927
@@ -97,4 +98,3 @@ vless://d4dab5da-87c1-4c18-9334-e8155444b9d2@xray2-direct-mci1-fs-ce.freesocks.w
 vless://ad65ebef-654b-4b5f-afa7-200f12b2ef40@166.0.22.243:2053?security=tls&flow=xtls-rprx-vision&fp=firefox&sni=jp3.netease.uz#%F0%9F%87%AF%F0%9F%87%B5%20A2%20papa%20136810
 vless://774bcad2-7a6f-4d98-9873-9b7b921c54c1@Estiksa.zarghamweb.ir:12700?encryption=none&security=tls&type=ws&headerType=none&path=%2F&host=pasar.zarghamweb.ir&sni=pasar.zarghamweb.ir&fp=firefox&alpn=h3%2Ch2%2Chttp%2F1.1#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20136809
 vless://774bcad2-7a6f-4d98-9873-9b7b921c54c1@tunpack.webshopi.ir:61504?encryption=none&security=tls&type=ws&headerType=none&path=%2F&host=pasar.zarghamweb.ir&sni=Pasar.zarghamweb.ir&fp=random&alpn=http%2F1.1#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20136808
-vless://774bcad2-7a6f-4d98-9873-9b7b921c54c1@salomans.zarghamweb.ir:17307?encryption=none&security=tls&type=ws&headerType=none&path=%2F&host=pasar.zarghamweb.ir&sni=pasar.zarghamweb.ir&fp=firefox&alpn=h3%2Ch2%2Chttp%2F1.1#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20136805
