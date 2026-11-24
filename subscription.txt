@@ -1,3 +1,6 @@
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.190:8080#%F0%9F%87%AC%F0%9F%87%A7%20A1%20papa%20148987
+vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@51.158.206.93:23576?security=reality&encryption=none&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&host=%2F%3FTELEGRAM---MARAMBASHI---MARAMBASHI---MARAMBASHI---MARAMBASHI&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=fuck.rkn&sid=01#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20148986
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpvWklvQTY5UTh5aGNRVjhrYTNQYTNB@82.38.31.162:443#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20147391
 vless://c762af05-2e92-4133-bc30-8cf45dd40a28@188.114.99.137:80?type=ws&host=suh.cryptofront.uk&path=/#%F0%9F%8C%90%20C%20papa%20148751
 trojan://57beeeb0-03fc-4fc9-94da-7604488a7134@bgsg1.hikigo.com:443?allowInsecure=1&sni=bgsg1.hikigo.com#%F0%9F%87%B8%F0%9F%87%AC%20C%20papa%20148750
 vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@51.158.206.80:23576?security=reality&type=tcp&packetEncoding=xudp&sni=fuck.rkn&fp=chrome&flow=xtls-rprx-vision&sid=01&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&encryption=none#%F0%9F%87%B3%F0%9F%87%B1%20C%20papa%20148749
@@ -95,6 +98,3 @@ vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@72.56.38.70:443?encryption=none&flo
 vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@45.90.56.209:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=business.coachbzns.live&fp=firefox&pbk=Hywhx5qCGCYnFK3iZF2KojGCZVNFVvjDCNCmiksW6js&type=tcp#%F0%9F%87%A8%F0%9F%87%AD%20A2%20papa%20148409
 vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@188.241.241.249:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=pskov.tatarpizza.shop&fp=firefox&pbk=lX4yzZR60ivTU7Eilr6TL6jflLF7lcSS6nXuzxaGRDc&type=tcp#%F0%9F%87%A9%F0%9F%87%AA%20A2%20papa%20148408
 vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@104.238.29.130:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=kazan.tatarpizza.shop&fp=firefox&pbk=RlH-NMhCyWlq2GzcjT5f3oCZP4sdlg0PgWz1bve6d2g&type=tcp#%F0%9F%87%AB%F0%9F%87%AE%20A2%20papa%20148407
-vless://818eaf39-544f-4d1d-977e-87be7e33eecf@94.183.157.174:8090?encryption=none&flow=&security=tls&sni=askuhgfdsg.space.coupons&fp=chrome&type=ws&path=/ws&host=askuhgfdsg.space.coupons#%F0%9F%87%B5%F0%9F%87%B1%20A2%20papa%20148406
-hysteria2://a86b8bc9-3412-4b4b-bb56-b2cb90be5680@193.41.68.206:443/?sni=patriot.ultimagamest.com&alpn=h3&fp=firefox&obfs=&insecure=0#%F0%9F%87%B3%F0%9F%87%B1%20A2%20papa%20148416
-vless://aa46b4eb-5c09-487d-811c-11535b23826d@vks20.nodecdn.pro:443?encryption=none&security=tls&sni=vks20.nodecdn.pro&fp=firefox&alpn=h2,http/1.1&type=xhttp&path=/upload/&host=vks20.nodecdn.pro&mode=packet-up#%F0%9F%8C%90%20A2%20papa%20148415
