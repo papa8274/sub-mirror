@@ -1,3 +1,4 @@
+ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206U09nOU5OcmFzejZzN2JidHJERTdGdz09Ok8xWHN3d0Z5U3lHRmNZdGYrWWw5Q1E9PQ@81.12.33.254:8443#%F0%9F%87%AE%F0%9F%87%B7%20A1%20papa%20149093
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.190:8080#%F0%9F%87%AC%F0%9F%87%A7%20A1%20papa%20148987
 vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@51.158.206.93:23576?security=reality&encryption=none&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&host=%2F%3FTELEGRAM---MARAMBASHI---MARAMBASHI---MARAMBASHI---MARAMBASHI&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=fuck.rkn&sid=01#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20148986
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpvWklvQTY5UTh5aGNRVjhrYTNQYTNB@82.38.31.162:443#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20147391
@@ -97,4 +98,3 @@ vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@84.75.255.208:443?type=tcp&security
 vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@72.56.38.70:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=biz.leaderpro.click&fp=firefox&pbk=4K9NyBAfeTFYGdM7YRTUG3C9jY2VjbcYhGIgb1TGujQ&type=tcp#%F0%9F%87%B7%F0%9F%87%BA%20A2%20papa%20148410
 vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@45.90.56.209:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=business.coachbzns.live&fp=firefox&pbk=Hywhx5qCGCYnFK3iZF2KojGCZVNFVvjDCNCmiksW6js&type=tcp#%F0%9F%87%A8%F0%9F%87%AD%20A2%20papa%20148409
 vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@188.241.241.249:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=pskov.tatarpizza.shop&fp=firefox&pbk=lX4yzZR60ivTU7Eilr6TL6jflLF7lcSS6nXuzxaGRDc&type=tcp#%F0%9F%87%A9%F0%9F%87%AA%20A2%20papa%20148408
-vless://cee05b0b-3d23-4c3b-b87e-def35b7ba460@104.238.29.130:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=kazan.tatarpizza.shop&fp=firefox&pbk=RlH-NMhCyWlq2GzcjT5f3oCZP4sdlg0PgWz1bve6d2g&type=tcp#%F0%9F%87%AB%F0%9F%87%AE%20A2%20papa%20148407
