@@ -1,3 +1,14 @@
+vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@15.204.97.206:23576?security=reality&encryption=none&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&host=Telegram-Leviko_v2ray&headerType=none&type=tcp&flow=xtls-rprx-vision&sni=fuck.rkn&sid=01#%F0%9F%87%BA%F0%9F%87%B8%20A1%20papa%20152124
+vless://40cc9b52-25b8-4cd5-8b45-715ae26e6baf@sc-thenetherlands1.09vpn.com:80?path=/vless/&security=none&encryption=none&host=sc-thenetherlands1.09vpn.com&type=ws#%F0%9F%87%B3%F0%9F%87%B1%20A2%20papa%20152054
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.213:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152123
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpvWklvQTY5UTh5aGNRVjhrYTNQYTNB@178.83.185.156:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152122
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.191:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152121
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@193.29.139.132:8080#%F0%9F%87%B3%F0%9F%87%B1%20A2%20papa%20152120
+vless://73e08fcb-a0c7-45d0-b55d-f78c903c64a6@dl3.gooniforoshi.fun:443?path=%2Fdownload.php&security=tls&encryption=none&insecure=0&host=dl3.gooniforoshi.fun&type=ws&allowInsecure=0&sni=dl3.gooniforoshi.fun#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152119
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.212:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152118
+vless://41bcd5ea-f90c-4227-ab6f-23de50b0a226@uktun.electrowizard.ir:5560?mode=auto&path=%2F&security=reality&encryption=none&pbk=JQrJ48ZmxVAkEIhb_bze6E2TEWEFOHRZcRPVNVq_nS0&host=aparat.com&fp=chrome&type=xhttp&sni=aparat.com&sid=0bdf592bcca01abb#%F0%9F%87%AE%F0%9F%87%B7%20A1%20papa%20152071
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpvWklvQTY5UTh5aGNRVjhrYTNQYTNB@193.29.139.235:443#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20152045
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.216:8080#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20151703
 vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@51.158.206.86:23576?security=reality&type=tcp&packetEncoding=xudp&sni=fuck.rkn&fp=chrome&flow=xtls-rprx-vision&sid=01&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&encryption=none#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20152117
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.181:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152114
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpvWklvQTY5UTh5aGNRVjhrYTNQYTNB@82.38.31.39:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152113
@@ -38,7 +49,6 @@ vmess://eyJhZGQiOiI4NC4xNy40MS4yIiwiYWlkIjowLCJob3N0IjoiYmoxYWEyenlqeHlhbXl1ay52
 trojan://0ab6c98dae3b48e8b9c4a776b6c9c19a@66.163.114.106:443?allowInsecure=1&sni=www.findconnectwithemployersandbuildprofessionalnetwork.com#%F0%9F%87%BA%F0%9F%87%B8%20C%20papa%20152103
 vless://0173d52e-8e1b-4681-831e-11529677b72f@165.231.157.126:8443?sni=api-6b04608f.adhil.uk&flow=xtls-rprx-vision&fp=safari&security=tls#%F0%9F%87%B7%F0%9F%87%BA%20C%20papa%20151706
 vless://2377a148-5e9b-431f-93f4-a1bbaa3dabe9@h3.1free.us.ci:443?&security=tls&fp=chrome&sni=h3.1free.us.ci&type=ws&headerType=none&host=h3.1free.us.ci&path=%2F57252d2116d6439f#%F0%9F%8C%90%20C%20papa%20151705
-ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.216:8080#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20151703
 vless://56665684-5ac0-4ba9-9d49-8b258fb57974@turkey-ip1.mmdaqaorg.xyz:50738?sni=turkey-ip1.mmdaqaorg.xyz&alpn=h2%2Chttp/1.1&fp=chrome&security=tls#%F0%9F%87%B9%F0%9F%87%B7%20C%20papa%20151322
 ss://YWVzLTI1Ni1nY206M2VPRmVOc3NkZTdQWVlNdg==@84.247.155.196:80#%F0%9F%87%AF%F0%9F%87%B5%20C%20papa%20149945
 ss://YWVzLTI1Ni1nY206a0RXdlhZWm9UQmNHa0M0@51.79.49.116:8882#%F0%9F%87%A8%F0%9F%87%A6%20C%20papa%20149761
@@ -88,13 +98,3 @@ vmess://eyJ2IjoiMiIsInBzIjoi8J+MkCBDIHBhcGEgMTUxNjE5IiwiYWRkIjoiSlAwMzIwMTAuc3Nn
 ss://YWVzLTI1Ni1nY206cXBvd2lfdmlwX3R1bm5lbF8yMDI2X3NlY3VyZQ==@211.233.33.228:8388#%F0%9F%87%B0%F0%9F%87%B7%20C%20papa%20151618
 vmess://eyJhZGQiOiJkb2ctanAua3VubHVuMDFkbnMuY29tIiwiYWlkIjowLCJob3N0IjoiIiwiaWQiOiI5NDY0Y2E0MC1kZDc1LTM3NDItYTYyOC1kOTMxYTlmNDEzYjIiLCJuZXQiOiJ0Y3AiLCJwYXRoIjoiIiwicG9ydCI6IjIxMDE3IiwicHMiOiLwn4et8J+HsCBDIHBhcGEgMTUxMjk1Iiwic25pIjoiIiwidGxzIjoiIiwidHlwZSI6Im5vbmUiLCJ2IjoiMiIsInNraXAtY2VydC12ZXJpZnkiOnRydWV9
 vless://d7d724b5-17ce-4f3c-877d-dfbf0f07afa1@150.251.113.34:443?security=reality&type=tcp&packetEncoding=none&allowInsecure=1&sni=www.cloudflare.com&fp=chrome&flow=xtls-rprx-vision&sid=150a627d15154cf2&pbk=8yMLSTbkpJFfbgTjNzotzz7U8OT6AERrclgKdKrXXW8#%F0%9F%87%B5%F0%9F%87%B1%20C%20papa%20151294
-vless://076799f8-d922-4bf1-805d-e758e6eb925f@free.server.darknetlk.com:443?sni=aka.ms&fp=chrome&security=tls#%F0%9F%8C%90%20A2%20papa%20151259
-vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@51.158.206.29:23576?security=reality&encryption=none&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=fuck.rkn&sid=01#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20150113
-vmess://eyJhZGQiOiIzOC4xMjguNjYuMjQxIiwiYWlkIjoiMCIsImFscG4iOiIiLCJob3N0IjoiIiwiaWQiOiI1YzA0MGYxZC00NWRiLTQzYmQtOGQ0Ni1lNDk1MGU0MzM3MzUiLCJuZXQiOiJ0Y3AiLCJwYXRoIjoiIiwicG9ydCI6IjEyNzAiLCJwcyI6IvCfh7rwn4e4IEMgcGFwYSAxNTIwOTAiLCJzY3kiOiJhdXRvIiwic25pIjoieG1maGxweS5jb20iLCJ0bHMiOiJ0bHMiLCJ0eXBlIjoibm9uZSIsInYiOiIyIiwic2tpcC1jZXJ0LXZlcmlmeSI6dHJ1ZX0=
-vless://eb8c97f7-a154-4442-91b0-54c0d055ad0b@156.229.167.109:8443?security=reality&type=tcp&packetEncoding=xudp&sni=github.githubassets.com&fp=chrome&sid=4ad2e4e660550e43&pbk=4g6gX0ueJap7pY_iTDx23h6bzo3KIOTcFzP1Uacn0QA#%F0%9F%87%BA%F0%9F%87%B8%20C%20papa%20152089
-vmess://eyJ2IjoiMiIsInBzIjoi8J+MkCBDIHBhcGEgMTUyMDg4IiwiYWRkIjoid3d3LnZpc2EuY29tIiwicG9ydCI6MjA4NiwiaWQiOiJlOWUzY2MxMy1kYjQ4LTRjYzEtOGMyNC03NjI2NDM5YTUzMzkiLCJhaWQiOjAsInNjeSI6ImF1dG8iLCJuZXQiOiJ3cyIsInRscyI6IiIsInNraXAtY2VydC12ZXJpZnkiOnRydWV9
-vmess://eyJ2IjoiMiIsInBzIjoi8J+HrfCfh7AgQyBwYXBhIDE1MTYyNSIsImFkZCI6IjQ3LjI0NC4xMjAuMTk3IiwicG9ydCI6NDQ4NjcsImFpZCI6MCwic2N5IjoiYXV0byIsIm5ldCI6IndzIiwidHlwZSI6Im5vbmUiLCJ0bHMiOiIiLCJpZCI6Ijg0NWU2YjA4LTI5MTktNDI5MC1hZGUwLTVkYzdkY2VhNTljYSIsInNraXAtY2VydC12ZXJpZnkiOnRydWUsImhvc3QiOiI0Ny4yNDQuMTIwLjE5NyIsInBhdGgiOiIvYXJraSJ9
-vless://4201786b-d99b-4147-a5f0-20d47acddb81@196.196.149.80:443?encryption=none&security=reality&sni=b3cd32g.es1.h1clayd.click&fp=firefox&pbk=7efBhLzPwoTtEC1GlukCdiTllobUfa2_XuAKNSLJx30&sid=e7cffac9f8cfb434&type=grpc#%F0%9F%87%B8%F0%9F%87%A8%20C%20papa%20151624
-vless://5de0c218-0138-45d8-94d2-c2c3f37a1a6d@94.183.234.245:443?security=reality&type=tcp&packetEncoding=xudp&sni=www.bing.com&fp=qq&flow=xtls-rprx-vision&sid=7f1e29593aa94ad1&pbk=tfFzmbVByvoZxxIEUiHMv22_k0-nQz00L0XjU0bd_Fc&encryption=none#%F0%9F%87%B1%F0%9F%87%BB%20A2%20papa%20151263
-vless://9afdc92d-4e88-4787-8d75-c95f7685d294@free-server.techsonic.dev:443?sni=aka.ms&fp=chrome&security=tls#%F0%9F%87%A9%F0%9F%87%AA%20C%20papa%20150859
-trojan://0ab6c98dae3b48e8b9c4a776b6c9c19a@66.163.127.215:443?#%F0%9F%87%B3%F0%9F%87%B1%20C%20papa%20149944
