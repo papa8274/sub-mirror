@@ -1,3 +1,12 @@
+ss://YWVzLTEyOC1nY206c2hhZG93c29ja3M@141.98.101.179:443#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20151444
+vless://ebdfaf99-41d8-4e48-8196-d54510ffb556@45.129.242.56:443?security=reality&encryption=none&pbk=YURKlEQ3rap4KOXXGsVFZyYev2oDU2gCEbNTXPdKWRY&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=www.cloudflare.com&sid=abcdef#%F0%9F%87%A9%F0%9F%87%AA%20A2%20papa%20152934
+ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206OTZTc2drM1ZDdjhLSGx6VTNxeVNsdz09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@81.12.80.9:8080#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152933
+ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206R3l1WUJZSTdaMXZIczM3blI3NlFuZz09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@81.12.35.243:8080#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152932
+ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206U09nOU5OcmFzejZzN2JidHJERTdGdz09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@5.57.38.206:8443#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152931
+ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206Mmgyc1Z6M2hremJNeWtiRDloZHVPQT09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@5.57.38.203:8080#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152930
+ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206a05laytQT3dHZ241cWhoY0lPeE4rdz09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@81.12.35.242:8443#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152929
+ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206TEQ5eEEwSTVOckUvYVBLdm1YTjBrUT09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@81.12.33.27:8443#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152928
+vless://2daecc81-dc8e-000e-8148-239a66ebb477@45.154.186.136:443?security=reality&encryption=none&pbk=BaonkRPNfYDTXYDgLmKRXA_Oqo8MCvTOwpUbhT9AFD4&host=%2F%3FTelegram---%40iranping24---%40iranping24---%40iranping24---%40iranping24---%40iranping24---%40iranping24---%40iranping24%2F&headerType=none&fp=firefox&type=tcp&flow=xtls-rprx-vision&sni=yabro-wbplugin.edadeal.yandex.ru&sid=cf8e76b5637df2ba#%F0%9F%87%B7%F0%9F%87%BA%20A1%20papa%20152721
 vless://bf14dc50-e9f2-49fd-8642-620446edeafb@www.visa.com:2083?&security=tls&fp=chrome&sni=v4-77j.pages.dev&type=ws&headerType=none&host=v4-77j.pages.dev&path=%2F#%F0%9F%8C%90%20C%20papa%20152377
 vmess://eyJ2IjoiMiIsInBzIjoi8J+HsPCfh7cgQyBwYXBhIDE1MjM3NiIsImFkZCI6IjEyOS4xNTQuNjEuMTk2IiwicG9ydCI6ODAwLCJpZCI6ImE5MTViMWQ2LWNmMjgtNGRjOC1lNGI0LWUwOWM0OGMzN2VjMCIsImFpZCI6MCwic2N5IjoiYXV0byIsIm5ldCI6InRjcCIsInR5cGUiOiIiLCJ0bHMiOiIiLCJza2lwLWNlcnQtdmVyaWZ5Ijp0cnVlfQ==
 vless://e73df646-1f62-41bf-8c50-653497d603d0@163.172.213.174:80?type=ws&host=SC-TheNetherlands2.09vpn.com&path=/vless/#%F0%9F%87%B3%F0%9F%87%B1%20C%20papa%20152375
@@ -89,12 +98,3 @@ vless://e894c08a-fecc-46f5-bf03-c95d0274c79d@6bf329t.nl18.h1clayd.click:443?secu
 vless://e894c08a-fecc-46f5-bf03-c95d0274c79d@13.141.37.4:443?security=reality&encryption=none&pbk=p35RUaaaItuoyNiCrLpGeStBUpEJMSiZ2AajdfhhmiM&headerType=none&type=tcp&flow=xtls-rprx-vision&sni=6bf329t.nl22.h1clayd.shop&sid=92aee92130b46fe2#%F0%9F%87%B3%F0%9F%87%B1%20A2%20papa%20152869
 vless://549766c3-fa5f-471e-8031-ffc1f8d5064f@93.183.127.54:24446?mode=auto&path=%2Fv2%2Fnotes%2F86cf7ba6ede1&security=reality&encryption=none&pbk=31_G-lTr8GVS33I-ySfmMOXJ7SzpS48Ela7xXeT9D1Y&type=xhttp&sni=tgnl2.blog-forme.ru&sid=29f834cf893710f9#%F0%9F%87%B3%F0%9F%87%B1%20A2%20papa%20152868
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTprMWRCT21PQjRvcWk3VW1wMzdhMWJR@82.38.31.218:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20151179
-ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0=@185.176.206.9:19999#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20149691
-vless://26843758-24de-4f76-b5d0-624038e353c4@71b840t.de7.h1clayd.click:443?&security=reality&pbk=3wFF83gtIA0sXj-6GGCAa--oQbSr0MVUj0FBc-0QmiE&sid=e572b6579ea525d4&fp=chrome&sni=71b840t.de7.h1clayd.click&type=tcp&headerType=none&host=71b840t.de7.h1clayd.click&path=%2F#%F0%9F%87%AE%F0%9F%87%B1%20A2%20papa%20152031
-vless://9a600801-e889-4705-9adb-bf9aeb366fc7@ifdmbpb.kdns.fr:443?sni=ifdmbpb.kdns.fr&fp=chrome&security=tls#%F0%9F%87%B0%F0%9F%87%B7%20C%20papa%20151226
-vless://d65cc14c-f53f-4fe2-b262-97856601319c@169.40.42.35:443?security=reality&encryption=none&pbk=e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=yahoo.com&sid=c39cc7310a#%F0%9F%87%A9%F0%9F%87%AA%20A1%20papa%20150141
-vmess://eyJ2IjoiMiIsInBzIjoi8J+HuvCfh7ggQyBwYXBhIDE0OTg0NyIsImFkZCI6IjM4LjkxLjEwNy40OSIsInBvcnQiOjE4MDAwLCJpZCI6ImY4YzhkYzNkLTBkMzctNDZiMC04YjM0LWE3MjMyODgyZmNmZSIsImFpZCI6MCwic2N5IjoiYXV0byIsIm5ldCI6InRjcCIsInR5cGUiOiIiLCJ0bHMiOiIiLCJza2lwLWNlcnQtdmVyaWZ5Ijp0cnVlfQ==
-vless://989d58b8-d2ea-4d28-b5ff-0f3cd078f2cf@www.gov.se:8080?sni=www.gov.se&type=ws&host=sdf23g-billowing-moon-348e.mzm468gc.workers.dev&path=/#%F0%9F%8C%90%20C%20papa%20149679
-vless://c08f0056-7a6d-4931-813b-aaa3cdd00aed@node-uk.connectsuite.org:8443?sni=node-uk.connectsuite.org&security=tls#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20149676
-ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0=@142.202.51.22:19999#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20149674
-ss://YWVzLTI1Ni1nY206WlJwZ2FCZUd4dEVOSVhndmhwa1pCS3o5R25XUlMyZFljeDlPK2EyaXdOND0=@38.114.120.221:19999#%F0%9F%87%AC%F0%9F%87%A7%20C%20papa%20149673
