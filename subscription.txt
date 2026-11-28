@@ -1,3 +1,9 @@
+vless://48ff2b70-e180-582f-8866-d9a2edeed5f5@51.158.206.25:23576?security=reality&encryption=none&pbk=1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=fuck.rkn#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20152959
+ss://Y2hhY2hhMjAtcG9seTEzMDU6azFkQk9tT0I0b3FpN1VtcDM3YTFiUQ==@82.38.31.220:8080#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152636
+ss://MjAyMi1ibGFrZTMtY2hhY2hhMjAtcG9seTEzMDU6Q2cyRHc0T2hkQlpocWJlTzlaVEEzZy9Hay9BdnNyWVpHaEFKZUduUUl4ND0@18.171.191.130:443#%F0%9F%87%AC%F0%9F%87%A7%20A2%20papa%20152813
+vmess://eyJhZGQiOiJJci53YnpvLmlyIiwiYWlkIjoiMCIsImlkIjoiYjdlM2U4YWYtZDFjYS00NWRhLWE5NWYtOGI5YWQ3NzM5OGIxIiwibmV0IjoidGNwIiwicG9ydCI6MjA4MCwicHMiOiLwn4eu8J+HtyBBMSBwYXBhIDE1MjY4NCIsInNjeSI6ImF1dG8iLCJ0eXBlIjoibm9uZSIsInYiOiIyIn0=
+vmess://eyJhZGQiOiI2Ny4yMjAuOTUuMyIsImFpZCI6IjAiLCJhbHBuIjoiIiwiZnAiOiIiLCJob3N0IjoiIiwiaWQiOiJmOGM4ZGMzZC0wZDM3LTQ2YjAtOGIzNC1hNzIzMjg4MmZjZmUiLCJpbnNlY3VyZSI6IjAiLCJuZXQiOiJyYXciLCJwYXRoIjoiIiwicGNzIjoiIiwicG9ydCI6IjE4MDAwIiwicHMiOiLwn4e68J+HuCBBMSBwYXBhIDE1MjQxMiIsInNjeSI6ImF1dG8iLCJzbmkiOiIiLCJ0bHMiOiIiLCJ0eXBlIjoiIiwidiI6IjIiLCJ2Y24iOiIifQ==
+ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpRQ1hEeHVEbFRUTUQ3anRnSFVqSW9q@193.29.139.168:8080#%F0%9F%87%B3%F0%9F%87%B1%20A1%20papa%20152368
 vless://eb83b44c-ad8c-4658-9923-313e59bb4d5e@143.246.199.64:443?security=tls&alpn=h2%2Chttp%2F1.1&encryption=none&insecure=0&headerType=none&fp=firefox&type=tcp&allowInsecure=0&flow=xtls-rprx-vision&sni=sw6.yndx-game.com#%F0%9F%87%B8%F0%9F%87%AA%20A2%20papa%20152957
 trojan://0ab6c98dae3b48e8b9c4a776b6c9c19a@66.163.118.244:443?security=tls&insecure=0&host=%2F%3FTelegram---PLANB_NET---PLANB_NET---PLANB_NET---PLANB_NET&headerType=none&type=tcp&allowInsecure=0&sni=api.discovergreatjobsandadvanceyourcareer.com#%F0%9F%87%AA%F0%9F%87%B8%20A2%20papa%20152956
 vless://a0fe052d-6ca1-4a9c-b626-7ecf78f386cb@108.162.194.165:2086?path=%2F&security=&encryption=none&host=arshia.lezzatArshia.ir&type=httpupgrade#%F0%9F%8C%90%20A2%20papa%20152955
@@ -92,9 +98,3 @@ vless://5de0c218-0138-45d8-94d2-c2c3f37a1a6d@94.183.234.245:443?security=reality
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpWVmxBZmY3N0NuQVU0M0FvYzVqMTVZ@90.156.203.62:5112#%F0%9F%87%B7%F0%9F%87%BA%20C%20papa%20149842
 ss://YWVzLTI1Ni1nY206a0RXdlhZWm9UQmNHa0M0@15.204.233.41:8882#%F0%9F%87%BA%F0%9F%87%B8%20C%20papa%20148604
 ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206Z1hxazYvMTlWWDUvd0pZWWJuVjIwUT09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@81.12.80.15:8080#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152923
-ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206SXNEY0dMZWUwVmx2ZjNnYkRwTytGdz09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@5.57.38.202:8080#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152922
-ss://MjAyMi1ibGFrZTMtYWVzLTEyOC1nY206RGlnOXQ0RThyZHlkVjEzNzRiM0V1dz09Oks3R0srRXBjeTJqUlJNaTNCUFhUT1E9PQ%3D%3D@5.57.38.206:8080#%F0%9F%87%AE%F0%9F%87%B7%20A2%20papa%20152921
-vless://00000000-0000-0000-0000-000000000000@1.1.1.1:443?path=%2F&security=tls&encryption=none&insecure=0&host=1.1.1.1&type=ws&allowInsecure=0&sni=1.1.1.1#%F0%9F%8C%90%20A2%20papa%20152920
-vmess://eyJhZGQiOiIzOC4xMDcuMjM0LjU3IiwiYWlkIjoiMCIsImFscG4iOiIiLCJmcCI6IiIsImhvc3QiOiIiLCJpZCI6IjU2N2Y0YmU1LTEyYWItNDJlMS1iOGQ5LWRiNmZkMWZkZDMxYyIsImluc2VjdXJlIjoiMCIsIm5ldCI6IndzIiwicGF0aCI6Ii92bWVzcy8iLCJwb3J0IjoiODAiLCJwcyI6IvCfh7Dwn4e/IEEyIHBhcGEgMTUyOTE5Iiwic2N5IjoiYXV0byIsInNuaSI6IiIsInRscyI6IiIsInR5cGUiOiItLS0iLCJ2IjoiMiJ9
-vless://53bbdad4-2f4e-45db-8df4-fa491a6a7227@188.114.98.0:443?path=%2Fproxyip%3DProxyIP.JP.CMLiussss.net&security=tls&encryption=none&insecure=0&host=freeceshi6.frii.site&type=ws&allowInsecure=0&sni=freeceshi6.frii.site#%F0%9F%8C%90%20A2%20papa%20152918
-vless://4da72a60-61b9-4571-a054-1bba24bf6728@151.101.110.219:443?path=%2F&security=tls&encryption=none&insecure=1&host=nesfeshzksab.global.ssl.fastly.neT.&type=ws&allowInsecure=1&sni=speedtest.net#%F0%9F%8C%90%20A2%20papa%20152917
